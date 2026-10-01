@@ -80,7 +80,7 @@ export function AdminFrame({
 
   function nav(pages: typeof items) {
     return pages.map((item) => (
-      <SideLink key={item.key} href={item.path} current={current(item.path)} onNavigate={() => setOpen(false)} icon={ICONS[item.key] || 'diamond'} label={item.label} />
+      <SideLink key={item.key} href={item.path} current={current(item.path)} onNavigate={() => setOpen(false)} icon={ICONS[item.key] || 'diamond'} label={item.key === 'logs' ? 'Logs' : item.label} />
     ));
   }
 
@@ -91,6 +91,7 @@ export function AdminFrame({
       {open && <div className="admin-nav-backdrop" onClick={() => setOpen(false)} />}
       <aside ref={drawer} id="admin-navigation" className={`admin-side${open ? " is-open" : ""}`} aria-label="Admin navigation" role={open ? "dialog" : undefined} aria-modal={open || undefined}>
         <button type="button" className="admin-nav-close" onClick={() => setOpen(false)}>Close navigation</button>
+        <div className="admin-identity-card">
         <Link href="/admin/overview" className="side-brand">
           <Logo size={32} />
           <span>
@@ -98,7 +99,27 @@ export function AdminFrame({
             <em>Administration</em>
           </span>
         </Link>
+          <div className="who admin-user-badge">
+            <span className="who-av" aria-hidden="true">
+              {initials}
+            </span>
+            <span>
+              <strong>{name || ROLE_LABELS[role]}</strong>
+              <em>{isSuperAdmin(role) ? 'Super Admin' : designation === 'principal' ? 'Principal' : designation === 'hod' ? 'HOD' : isSchoolStaff(role) ? 'School staff' : ROLE_LABELS[role] || role}</em>
+            </span>
+            <SignOutButton className="admin-signout danger" iconOnly to="/login?as=admin" />
+          </div>
+        </div>
         <nav>
+          <SideLink href="/" current={false} onNavigate={() => setOpen(false)} icon="home" label="Student Hub" />
+          {(isFullAccess(role) || distribution.length > 0 || logs.length > 0) && (
+            <section className="admin-nav-group" aria-label="Admin">
+              <p className="nav-label">Admin</p>
+              {isFullAccess(role) && <SideLink href="/admin/settings" current={path === '/admin/settings'} onNavigate={() => setOpen(false)} icon="settings" label="Settings" />}
+              {nav(distribution)}
+              {nav(logs)}
+            </section>
+          )}
           <p className="nav-label">Workspace</p>
           <SideLink href="/admin/overview" current={path === '/admin/overview'} onNavigate={() => setOpen(false)} icon="home" label="Overview" />
           <p className="nav-label">Learning content</p>
@@ -109,48 +130,13 @@ export function AdminFrame({
               {nav(access)}
             </>
           )}
-          {distribution.length > 0 && (
-            <>
-              <p className="nav-label">Distribution</p>
-              {nav(distribution)}
-            </>
-          )}
           {reports.length > 0 && (
             <>
               <p className="nav-label">Reports</p>
               {nav(reports)}
             </>
           )}
-          {logs.length > 0 && (
-            <>
-              <p className="nav-label">Logs</p>
-              {nav(logs)}
-            </>
-          )}
-          {isFullAccess(role) ? (
-            <>
-              <p className="nav-label">Preferences</p>
-              <SideLink href="/admin/settings" current={path === '/admin/settings'} onNavigate={() => setOpen(false)} icon="settings" label="Settings" />
-            </>
-          ) : null}
         </nav>
-        <div className="side-foot">
-          <div className="who">
-            <span className="who-av" aria-hidden="true">
-              {initials}
-            </span>
-            <span>
-              <strong>{name || ROLE_LABELS[role]}</strong>
-              <em>{isSuperAdmin(role) ? 'Super Admin' : designation === 'principal' ? 'Principal' : designation === 'hod' ? 'HOD' : isSchoolStaff(role) ? 'School staff' : ROLE_LABELS[role] || role}</em>
-            </span>
-          </div>
-
-          <Link href="/" className="side-link">
-            <Icon kind="home" />
-            Student hub
-          </Link>
-          <SignOutButton className="side-link sign-out" icon to="/login?as=admin" />
-        </div>
       </aside>
       <main id="admin-content" className="admin-main"><div className="admin-context"><span>Administration <span aria-hidden="true">/</span> {path === '/admin/settings' ? 'Settings' : path === '/admin/overview' ? 'Overview' : path.startsWith('/admin/licences/') ? 'School roster' : path === '/admin/staff' ? 'Staff' : items.find(p=>p.path===path)?.label || 'Workspace'}</span><Link href="/">View student hub ↗</Link></div>{children}</main>
     </div>
