@@ -62,7 +62,8 @@ export function AdminFrame({
   }, []);
   const items = ADMIN_PAGES.filter((page) => canOpenAdminPage(role, page.key, grants, designation));
   const content = items.filter((p) => p.section === 'content');
-  const access = items.filter((p) => p.section === 'access');
+  const access = items.filter((p) => p.section === 'access' && p.key !== 'permissions');
+  const permissions = items.filter((p) => p.key === 'permissions');
   const distribution = items.filter((p) => p.section === 'distribution');
   const reports = items.filter((p) => p.section === 'reports');
   const logs = items.filter((p) => p.section === 'logs');
@@ -112,10 +113,11 @@ export function AdminFrame({
         </div>
         <nav>
           <SideLink href="/" current={false} onNavigate={() => setOpen(false)} icon="home" label="Student Hub" />
-          {(isFullAccess(role) || distribution.length > 0 || logs.length > 0) && (
+          {(isFullAccess(role) || distribution.length > 0 || logs.length > 0 || permissions.length > 0) && (
             <section className="admin-nav-group" aria-label="Admin">
               <p className="nav-label">Admin</p>
               {isFullAccess(role) && <SideLink href="/admin/settings" current={path === '/admin/settings'} onNavigate={() => setOpen(false)} icon="settings" label="Settings" />}
+              {nav(permissions)}
               {nav(distribution)}
               {nav(logs)}
             </section>
