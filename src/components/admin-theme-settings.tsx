@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 
 const themes = [
-  { id: 'classic', name: 'Classic', detail: 'Original navy · softly beveled', colors: ['#16324f', '#eef1f6', '#ffffff'] },
-  { id: 'emerald', name: 'Emerald', detail: 'Forest green · rounded and soft', colors: ['#155347', '#edf5ef', '#ffffff'] },
-  { id: 'ocean', name: 'Ocean', detail: 'Ocean blue · crisp and minimal', colors: ['#175b83', '#edf5fa', '#ffffff'] },
-  { id: 'amethyst', name: 'Amethyst', detail: 'Plum violet · gentle lighting', colors: ['#603e80', '#f3eff8', '#ffffff'] },
-  { id: 'sandstone', name: 'Sandstone', detail: 'Warm bronze · clean paper finish', colors: ['#79502d', '#f7f2e9', '#fffdf8'] },
+  { id: 'classic', name: 'Classic', detail: 'Tailored navy · satin surfaces', colors: ['#16324f', '#eef1f6', '#ffffff'] },
+  { id: 'emerald', name: 'Emerald', detail: 'Botanical green · soft rounded cards', colors: ['#155347', '#edf5ef', '#ffffff'] },
+  { id: 'ocean', name: 'Ocean', detail: 'Architectural blue · crisp edges', colors: ['#175b83', '#edf5fa', '#ffffff'] },
+  { id: 'amethyst', name: 'Amethyst', detail: 'Velvet violet · luminous surfaces', colors: ['#603e80', '#f3eff8', '#ffffff'] },
+  { id: 'sandstone', name: 'Sandstone', detail: 'Warm bronze · ivory paper', colors: ['#79502d', '#f7f2e9', '#fffdf8'] },
 ];
 
 export function AdminThemeSettings() {
