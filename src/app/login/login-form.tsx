@@ -129,7 +129,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
       if (temporary) concealTemporaryPassword(form);
       window.location.assign(profile?.must_change_password
         ? '/change-password'
-        : isAdminStaff(role) || isSchoolStaff(role) ? '/admin/overview' : '/');
+        : '/');
       return;
     } catch (err) {
       const text = err instanceof Error ? err.message : err && typeof err === 'object' && 'message' in err ? String(err.message) : '';

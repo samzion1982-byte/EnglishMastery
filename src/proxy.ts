@@ -84,7 +84,7 @@ export async function proxy(request: NextRequest) {
 
   if (user && isLogin) {
     const dest = request.nextUrl.clone();
-    dest.pathname = isAdminStaff(role) || isSchoolStaff(role) ? '/admin/overview' : '/';
+    dest.pathname = '/';
     dest.search = '';
     return NextResponse.redirect(dest);
   }

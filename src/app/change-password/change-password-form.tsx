@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { createBrowserSupabase } from '@/lib/supabase';
-import { isAdminStaff, isSchoolStaff, STUDENT_DEFAULT_PASSWORD } from '@/lib/access';
+import { STUDENT_DEFAULT_PASSWORD } from '@/lib/access';
 
 export function ChangePasswordForm() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
@@ -37,8 +37,7 @@ export function ChangePasswordForm() {
         const { error: flagError } = await supabase.from('profiles').update({ must_change_password: false }).eq('id', user.id).select('id');
         if (flagError) throw flagError;
       }
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user?.id || '').maybeSingle();
-      window.location.assign(isAdminStaff(profile?.role) || isSchoolStaff(profile?.role) ? '/admin/overview' : '/');
+      window.location.assign('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not update password.');
     } finally {
