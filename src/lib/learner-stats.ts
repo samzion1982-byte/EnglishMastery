@@ -153,12 +153,12 @@ function shuffle<T>(list: T[]) {
 const review = (list: StudyWord[]) => list.map((w) => ({ kind: 'review' as const, wordId: w.id }));
 const learn = (list: StudyWord[]) => list.map((w) => ({ kind: 'learn' as const, wordId: w.id }));
 
-/** Due reviews and the next new words of one level; a finished level replays as a quiz. */
+/** Continue unfinished levels with new words; completed levels replay as a quiz. */
 export function levelSession(data: LearnerData, level: WordLevel, now = Date.now()): SessionItem[] {
   const due = level.words.filter((w) => isDue(data.progress[w.id], now)).slice(0, 10);
   const fresh = level.words.filter((w) => !data.progress[w.id]).slice(0, 10);
-  if (!due.length && !fresh.length) return review(shuffle(level.words).slice(0, 10));
-  return [...review(due), ...learn(fresh)];
+  if (fresh.length) return learn(fresh);
+  return review(due.length ? due : shuffle(level.words).slice(0, 10));
 }
 
 export function buildSession(kind: SessionKind, data: LearnerData, bucket?: LiveBucket, now = Date.now()): SessionItem[] {
