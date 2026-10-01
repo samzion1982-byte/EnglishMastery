@@ -53,6 +53,7 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
   const [notice, setNotice, noticeTone] = useNotice('');
   const [rangeOpen, setRangeOpen] = useState(false);
   const [rangeAll, setRangeAll] = useState(false);
+  const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
   const [start, setStart] = useState('');
   const [end, setEnd] = useState(todayIso);
   const dialog = useDialog<HTMLElement>(() => { if (busy !== 'download' && busy !== 'folder') setRangeOpen(false); }, rangeOpen);
@@ -132,6 +133,8 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
       return;
     }
     setRangeAll(all);
+    setSelectedSchools(all ? schools.map(school => school.id) : []);
+    setNotice('');
     setEnd(todayIso());
     setStart(all ? '' : academicStart());
     setRangeOpen(true);
@@ -155,7 +158,9 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
       return;
     }
     if (rangeAll) {
-      await writeAll(start, end);
+      const selected = schools.filter(school => selectedSchools.includes(school.id));
+      if (!selected.length) { setNotice('Select at least one school.', 'error'); return; }
+      await writeAll(selected, start, end);
       return;
     }
     await downloadSchool(schoolId, desk?.school || 'School', start, end);
@@ -187,7 +192,7 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
     }
   }
 
-  async function writeAll(from: string, to: string) {
+  async function writeAll(selected: SchoolRow[], from: string, to: string) {
     setBusy('folder');
     setNotice('');
     try {
@@ -195,9 +200,9 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
       const { default: JSZip } = await import('jszip');
       const archive = new JSZip();
       let exported = 0;
-      for (const school of schools) {
+      for (const school of selected) {
         count += 1;
-        setNotice(`Writing ${count} of ${schools.length}: ${school.name}`);
+        setNotice(`Writing ${count} of ${selected.length}: ${school.name}`);
         const report = await reportFor(school.id, from, to);
         if (!report.coverage.length) continue;
         const workbook = await buildSchoolReport(report);
@@ -206,8 +211,8 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
       }
       setRangeOpen(false);
       if (!exported) { setNotice('No school reports are available for this date range.', 'error'); return; }
-      downloadBlob(await archive.generateAsync({ type: 'blob' }), 'Reports - All Schools.zip');
-      setNotice(`Downloaded ${exported} school workbooks in Reports - All Schools.zip.`, 'success');
+      downloadBlob(await archive.generateAsync({ type: 'blob' }), 'Reports - Selected Schools.zip');
+      setNotice(`Downloaded ${exported} school workbooks in Reports - Selected Schools.zip.`, 'success');
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         setNotice('');
@@ -285,7 +290,7 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
           <section ref={dialog} className="report-dialog" role="dialog" aria-modal="true" aria-labelledby="report-dates-title">
             <header>
               <p className="admin-kicker">Report period</p>
-              <h2 id="report-dates-title">{rangeAll ? 'All schools' : (desk?.school || 'Generate Report')}</h2>
+              <h2 id="report-dates-title">{rangeAll ? 'Choose schools' : (desk?.school || 'Generate Report')}</h2>
               <p>
                 {rangeAll
                   ? 'Leave the start date empty and each school begins on the day its tracker was uploaded. The end date is today unless you change it. The workbooks are downloaded together as a ZIP file.'
@@ -293,20 +298,42 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
               </p>
             </header>
             <form onSubmit={(event) => { event.preventDefault(); void generate(); }}>
+              {rangeAll && (
+                <fieldset className="report-school-picker" disabled={!!busy}>
+                  <legend>Schools to include</legend>
+                  <div className="report-school-tools">
+                    <span aria-live="polite">{selectedSchools.length} of {schools.length} selected</span>
+                    <button type="button" onClick={() => setSelectedSchools(schools.map(school => school.id))}>Select all</button>
+                    <button type="button" onClick={() => setSelectedSchools([])}>Clear all</button>
+                  </div>
+                  <div className="report-school-list">
+                    {schools.map(school => (
+                      <label key={school.id} className="report-school-option">
+                        <input type="checkbox" checked={selectedSchools.includes(school.id)} onChange={event => {
+                          const checked = event.target.checked;
+                          setSelectedSchools(ids => checked ? [...ids, school.id] : ids.filter(id => id !== school.id));
+                        }} />
+                        <span>{school.name}{school.school_code && <small>{school.school_code}</small>}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
               <div className="report-date-grid">
                 <label>
                   Start date
-                  <input type="date" value={start} max={end || undefined} onChange={(event) => setStart(event.target.value)} />
+                  <input type="date" disabled={!!busy} value={start} max={end || undefined} onChange={(event) => setStart(event.target.value)} />
                 </label>
                 <label>
                   End date
-                  <input required type="date" value={end} min={start || undefined} onChange={(event) => setEnd(event.target.value)} />
+                  <input required type="date" disabled={!!busy} value={end} min={start || undefined} onChange={(event) => setEnd(event.target.value)} />
                 </label>
               </div>
               <p className="report-span">{start && end ? `${prettyDate(start)} – ${prettyDate(end)}` : end ? `Through ${prettyDate(end)}` : 'Choose the end date.'}</p>
+              <div aria-live="polite">{notice && <p className={`notice ${noticeTone}`}>{notice}</p>}</div>
               <div className="report-dialog-actions">
                 <button type="button" disabled={!!busy} onClick={() => setRangeOpen(false)}>Cancel</button>
-                <button className="go" type="submit" disabled={!!busy}>{busy ? 'Building…' : 'Generate Report'}</button>
+                <button className="go" type="submit" disabled={!!busy || (rangeAll && !selectedSchools.length)}>{busy ? 'Building…' : rangeAll ? `Generate reports (${selectedSchools.length})` : 'Generate Report'}</button>
               </div>
             </form>
           </section>

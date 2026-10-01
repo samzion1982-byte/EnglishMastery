@@ -4793,3 +4793,17 @@ html[data-theme-mode='light'] .admin-shell .report-date-grid input[type='date'] 
 :is([role="dialog"], [role="alertdialog"], dialog) { caret-color: transparent; }
 :is([role="dialog"], [role="alertdialog"], dialog) :is(input, textarea, [contenteditable]:not([contenteditable="false"])),
 :is([role="dialog"], [role="alertdialog"], dialog) [contenteditable]:not([contenteditable="false"]) * { caret-color: auto; }
+
+/* School selection in the report export dialog. */
+.report-dialog { max-height: calc(100dvh - 40px); overflow-y: auto; }
+.report-school-picker { min-width: 0; margin: 0 0 20px; padding: 0; border: 0; }
+.report-school-picker legend { margin-bottom: 10px; font-weight: 700; }
+.report-school-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.report-school-tools > span { flex: 1; font-size: 14px; }
+.report-school-list { max-height: 240px; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; }
+.report-school-option { display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; }
+.report-school-option + .report-school-option { border-top: 1px solid var(--line); }
+.report-school-option:has(input:checked) { background: var(--accent-soft); }
+.admin-shell .report-school-option input[type='checkbox'] { width: 18px; height: 18px; flex: 0 0 18px; accent-color: var(--accent); }
+.report-school-option span { overflow-wrap: anywhere; }
+.report-school-option small { display: block; color: var(--text-3); margin-top: 3px; }
