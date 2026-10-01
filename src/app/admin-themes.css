@@ -202,3 +202,23 @@ html[data-theme][data-admin-style] .admin-shell .admin-content-submenu > .admin-
 
 html[data-theme][data-admin-style] .admin-shell .admin-content-submenu > summary:hover { border-color:#ffffff60; background-color:var(--style-accent); }
 html[data-theme][data-admin-style] .admin-shell .admin-content-submenu > summary:active { box-shadow:inset 0 2px 3px #0003; }
+
+/* Raised, theme-aware labels rather than flat white captions. */
+html[data-theme][data-admin-style] .admin-shell :is(.admin-kicker,.admin-destinations a > span,.perm-grid thead strong) {
+ background:linear-gradient(180deg,#ffffffb3,transparent 65%),color-mix(in srgb,var(--style-glow) 28%,var(--style-bg));
+ color:var(--style-accent); border:1px solid color-mix(in srgb,var(--style-accent) 25%,var(--style-line));
+ border-radius:7px; box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #0000000c,0 2px 3px #10233812;
+ text-shadow:0 1px 0 #ffffffaa; font-weight:700;
+}
+html[data-theme][data-admin-style] .admin-shell .admin-nav-group > .nav-label,
+html[data-theme][data-admin-style] .admin-shell .admin-nav-group > summary {
+ color:var(--style-glow); text-shadow:0 1px 2px #0008;
+ border-bottom:1px solid color-mix(in srgb,var(--style-glow) 25%,transparent);
+ padding-bottom:10px; margin-bottom:4px;
+}
+html[data-theme][data-admin-style] .admin-shell :is(.workspace-heading > p,.admin-context) { color:var(--style-accent); font-weight:600; }
+html[data-theme][data-admin-style] .admin-shell .admin-main :is(.settings-panel,.admin-card,.translation-language) > h2 {
+ color:var(--style-accent); text-shadow:0 1px 0 #fff; padding-bottom:10px; border-bottom:1px solid var(--style-line);
+}
+html[data-theme][data-admin-style] .admin-shell .admin-main :is(.report-date-grid label,.report-school-picker legend) { color:var(--style-accent); font-weight:700; text-shadow:0 1px 0 #fff; }
+html[data-theme][data-admin-style] .admin-shell .perm-grid thead .perm-hint { color:#fff; text-shadow:0 1px 2px #0005; }
