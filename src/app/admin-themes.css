@@ -5,7 +5,7 @@ html[data-admin-style='amethyst'] .admin-shell { --style-accent:#603e80; --style
 html[data-admin-style='sandstone'] .admin-shell { --style-accent:#79502d; --style-bg:#f7f2e9; --style-line:#e6d9c4; --style-radius:9px; --style-shadow:0 3px 0 #79502d12; }
 html[data-admin-style]:not([data-admin-style='classic']) .admin-shell { --accent:var(--style-accent); --accent-fg:var(--style-accent); --accent-soft:var(--style-bg); --line:var(--style-line); --line-2:var(--style-line); background:var(--style-bg); }
 html[data-admin-style]:not([data-admin-style='classic']) .admin-shell .admin-main { background:var(--style-bg); }
-html[data-admin-style]:not([data-admin-style='classic']) .admin-shell .admin-side { background:linear-gradient(165deg,var(--style-accent),color-mix(in srgb,var(--style-accent) 45%,#091522)); }
+html[data-admin-style]:not([data-admin-style='classic']) .admin-shell .admin-side { background:linear-gradient(165deg,color-mix(in srgb,var(--style-accent) 65%,#080e16),color-mix(in srgb,var(--style-accent) 22%,#080e16)); }
 html[data-admin-style]:not([data-admin-style='classic']) .admin-shell :is(.admin-card,.settings-panel,.school-card,.translation-language,.report-dialog,.admin-destinations a,.perm-head) { background:linear-gradient(155deg,#fff,var(--style-bg)); border-color:var(--style-line); border-radius:var(--style-radius); box-shadow:var(--style-shadow); }
 html[data-admin-style]:not([data-admin-style='classic']) .admin-shell :is(.workspace-heading,.page-head) { background:linear-gradient(110deg,#fff,var(--style-bg)); border-color:var(--style-line); border-left-color:var(--style-accent); border-radius:var(--style-radius); }
 html[data-admin-style]:not([data-admin-style='classic']) .admin-shell .go { background:var(--style-accent); border-color:var(--style-accent); color:#fff; box-shadow:inset 0 1px 0 #ffffff33,0 2px 0 #0002; }
@@ -18,3 +18,5 @@ html[data-admin-style]:not([data-admin-style='classic']) .admin-shell .admin-kic
 .admin-style-preview > i { width:25%; }
 .admin-style-preview > span { flex:1; margin:14px 12px 14px 0; border-radius:5px; padding:12px; box-shadow:0 3px 8px #0001; }
 .admin-style-preview b { display:block; width:65%; height:8px; border-radius:4px; opacity:.5; }
+
+.admin-style-grid button:not(:first-child) .admin-style-preview > i { background-image:linear-gradient(165deg,#080e1659,#080e16c7); }
