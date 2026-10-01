@@ -34,7 +34,7 @@ export type HubActions = {
   onPlace: (place: Place) => void;
   onToday: () => void;
   onLevel: (bucket: LiveBucket, level: WordLevel) => void;
-  onReview: (bucket: LiveBucket) => void;
+  onReview: (bucket: LiveBucket, level: WordLevel) => void;
   onQuiz: (bucket: LiveBucket) => void;
   onBatchSize: (size: number) => void;
   onSwitch: (bucket: LiveBucket) => void;
@@ -328,6 +328,7 @@ function TrackTiles({ tracks, current, onOpen }: { tracks: TrackSummary[]; curre
 function TrackView({ data, track, actions }: { data: LearnerData; track: TrackSummary; actions: HubActions }) {
   const size = data.profile.batchSize;
   const next = track.current;
+  const reviewLevel = next?.learned ? next : [...track.levels].reverse().find(level => level.learned > 0);
   const learnedInScope = track.learned;
   const finished = track.complete;
   return (
@@ -357,9 +358,9 @@ function TrackView({ data, track, actions }: { data: LearnerData; track: TrackSu
                 {next.learned ? `Continue level ${next.number}` : `Start level ${next.number}`}
               </button>
             )}
-            <button type="button" className="s-btn ghost lg" onClick={() => actions.onReview(track.bucket)} disabled={!track.due}>
+            <button type="button" className="s-btn ghost lg" onClick={() => reviewLevel && actions.onReview(track.bucket, reviewLevel)} disabled={!reviewLevel} title={reviewLevel ? `Revisit learned words in level ${reviewLevel.number}` : undefined}>
               <Icon kind="repeat" />
-              Review{track.due ? ` · ${track.due}` : ''}
+              Review{reviewLevel ? ` · ${reviewLevel.learned}` : ''}
             </button>
             <button type="button" className="s-btn ghost lg" onClick={() => actions.onQuiz(track.bucket)} disabled={!learnedInScope}>
               <Icon kind="target" />

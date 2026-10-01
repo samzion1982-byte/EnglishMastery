@@ -8,7 +8,7 @@ import { ProfileView } from '@/components/student/profile';
 import { Session, type Outcome } from '@/components/student/session';
 import { TopBar } from '@/components/student/top-bar';
 import { applyDelta, clampTodayLearned, dayKey, loadLearner, recordActivity, recordItem, resetProgress, saveProfile, type LearnerData, type LearnerProfile, type ResetScope } from '@/lib/learner';
-import { buildSession, learnedToday, levelSession, levelsOf, streakOf, trackSummary, type SessionItem } from '@/lib/learner-stats';
+import { buildSession, learnedToday, levelSession, revisitLevel, levelsOf, streakOf, trackSummary, type SessionItem } from '@/lib/learner-stats';
 import { learnedNow, reviewed, XP } from '@/lib/srs';
 import type { LiveBucket } from '@/lib/vocab';
 import { setEntryOwner, warmEntries } from '@/lib/word-store';
@@ -122,8 +122,12 @@ export default function Home() {
         empty: 'This level has no words yet.',
       });
     },
-    onReview: (bucket) => {
-      run({ build: (d) => buildSession('review', d, bucket), empty: 'No words are due for review.' });
+    onReview: (bucket, level) => {
+      const size = data?.profile.batchSize ?? level.words.length;
+      run({ build: (d) => {
+        const selected = levelsOf(d, bucket, size).find(candidate => candidate.number === level.number);
+        return selected ? revisitLevel(d, selected) : [];
+      }, empty: 'No learned words in this level yet.' });
     },
     onQuiz: (bucket) => {
       run({ build: (d) => buildSession('practice', d, bucket), empty: 'Learn a few words first, then try a quiz.' });
@@ -158,7 +162,7 @@ export default function Home() {
   };
 
   function record(item: SessionItem, outcome: Outcome) {
-    if (!data) return;
+    if (!data || item.kind === 'revisit') return;
     const now = Date.now();
     const day = dayKey(now);
     const prev = data.progress[item.wordId];

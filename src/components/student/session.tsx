@@ -327,6 +327,7 @@ export function Session({
     return quizOptions(word, pool, (w) => resolveStudy(w, entries.get(w.lemma)).primary);
   }, [entries, item, word, pool]);
   const done = index >= items.length;
+  const revisiting = items.every(item => item.kind === 'revisit');
   const answered = Object.keys(results).length;
 
   function go(to: number) {
@@ -334,7 +335,7 @@ export function Session({
   }
 
   function record(outcome: Outcome, picked?: string) {
-    if (!item || results[index]) return;
+    if (!item || item.kind === 'revisit' || results[index]) return;
     onRecord(item, outcome);
     setResults((r) => ({ ...r, [index]: { outcome, picked } }));
     setTally((t) => ({
@@ -374,15 +375,22 @@ export function Session({
     <section className={`session${done ? ' done' : ''}`}>
       <div className="session-main">
       <div className="session-stage">
-        {done ? (
+        {done && revisiting ? (
+          <section className="card study-card">
+            <h2>Review complete</h2>
+            <p>You revisited the learned words in this level.</p>
+            <button type="button" className="s-btn primary" onClick={onExit}>Back to vocabulary</button>
+            <button type="button" className="s-btn ghost" onClick={() => go(0)}>Look again</button>
+          </section>
+        ) : done ? (
           <Summary skipped={items.length - answered} onSkipped={() => go(items.findIndex((_, i) => !results[i]))} tally={tally} data={data} onHome={onExit} onAgain={onAgain} onBack={() => go(items.length - 1)} />
-        ) : word && item.kind === 'learn' ? (
+        ) : word && (item.kind === 'learn' || item.kind === 'revisit') ? (
           <LearnCard
             key={index}
             word={word}
             language={data.profile.language}
             thesaurus={data.profile.thesaurus}
-            revisit={!!result}
+            revisit={item.kind === 'revisit' || !!result}
             onDone={() => {
               record('learned');
               go(index + 1);
@@ -422,7 +430,7 @@ export function Session({
             Back
           </button>
           <button type="button" className="s-btn ghost" onClick={() => go(index + 1)}>
-            {result ? (index === items.length - 1 ? 'Finish' : 'Next') : 'Skip for now'}
+            {result || revisiting ? (index === items.length - 1 ? 'Finish' : 'Next') : 'Skip for now'}
             <Icon kind="next" />
           </button>
         </nav>
@@ -436,8 +444,8 @@ export function Session({
           <span className="session-count">
             {index + 1}/{items.length}
           </span>
-          <div className="session-progress" role="progressbar" aria-label="Answered cards" aria-valuemin={0} aria-valuemax={items.length} aria-valuenow={answered}>
-            <span style={{ height: `${(answered / items.length) * 100}%` }} />
+          <div className="session-progress" role="progressbar" aria-label="Answered cards" aria-valuemin={0} aria-valuemax={items.length} aria-valuenow={revisiting ? index : answered}>
+            <span style={{ height: `${((revisiting ? index : answered) / items.length) * 100}%` }} />
           </div>
           <span className="session-xp">
             <Icon kind="sparkle" />

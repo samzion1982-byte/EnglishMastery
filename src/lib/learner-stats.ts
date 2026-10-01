@@ -6,7 +6,7 @@ import { liveBuckets, type LiveBucket } from './vocab';
 const DAY = 86_400_000;
 
 export type SessionKind = 'today' | 'learn' | 'review' | 'practice';
-export type SessionItem = { kind: 'learn' | 'review'; wordId: string };
+export type SessionItem = { kind: 'learn' | 'review' | 'revisit'; wordId: string };
 
 export function streakOf(activity: DayActivity[], now = Date.now()) {
   const active = new Set(activity.filter((a) => a.learned + a.reviews > 0).map((a) => a.day));
@@ -159,6 +159,11 @@ export function levelSession(data: LearnerData, level: WordLevel, now = Date.now
   const fresh = level.words.filter((w) => !data.progress[w.id]).slice(0, 10);
   if (fresh.length) return learn(fresh);
   return review(due.length ? due : shuffle(level.words).slice(0, 10));
+}
+
+/** Reopen every learned word in this level without grading or changing progress. */
+export function revisitLevel(data: LearnerData, level: WordLevel): SessionItem[] {
+  return level.words.filter(word => !!data.progress[word.id]).map(word => ({ kind: 'revisit', wordId: word.id }));
 }
 
 export function buildSession(kind: SessionKind, data: LearnerData, bucket?: LiveBucket, now = Date.now()): SessionItem[] {
