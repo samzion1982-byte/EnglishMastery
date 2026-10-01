@@ -39,6 +39,8 @@ export default async function Overview() {
     isSchoolStaff(role) ? readSchoolPost(sb) : null,
   ]);
   const pages = ADMIN_PAGES.filter((p) => canOpenAdminPage(role, p.key, grants, post?.designation));
+  const contentPages = pages.filter(page => page.section === 'content');
+  const otherPages = pages.filter(page => page.section !== 'content');
   const descriptions: Record<string, string> = {
     'core-vocabulary': 'Review, organize, enrich, and publish vocabulary across learning tracks.',
     appendix: 'Organize extra word lists and topic collections.',
@@ -68,7 +70,17 @@ export default async function Overview() {
         <h2 id="work-heading">Your workspace</h2>
         {pages.length === 0 ? <p>You are signed in to the admin panel.</p> : (
           <div className="admin-destinations">
-            {pages.map((p) => (
+            {contentPages.length > 0 && (
+              <article className="overview-content-tile">
+                <span className="admin-kicker">LEARNING CONTENT</span>
+                <h3>{contentPages.map(page => page.label).join(' & ')}</h3>
+                <p>Manage vocabulary, word lists, and topic collections.</p>
+                <div className="overview-content-actions">
+                  {contentPages.map(page => <Link className="overview-content-link" key={page.key} href={page.path}>{page.label} →</Link>)}
+                </div>
+              </article>
+            )}
+            {otherPages.map((p) => (
               <Link href={p.path} key={p.key}>
                 {p.key === 'reports' && entitlement ? <em className="entitlement">{entitlement}</em> : null}
                 <span>{SECTION_LABEL[p.section] || 'LEARNING CONTENT'}</span>

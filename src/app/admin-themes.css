@@ -131,3 +131,15 @@ html[data-theme][data-admin-style] .admin-shell button.admin-signout:hover { bac
 html[data-theme][data-admin-style] .admin-shell button.admin-signout svg { width:18px; height:18px; }
 html[data-theme][data-admin-style] .admin-shell .admin-nav-group { display:grid; gap:8px; padding:12px; margin-top:12px; border:1px solid #ffffff24; border-radius:12px; background:#ffffff05; }
 html[data-theme][data-admin-style] .admin-shell .admin-nav-group .nav-label { margin:0 0 4px; }
+
+html[data-theme][data-admin-style] .admin-shell .overview-content-tile {
+ display:flex; flex-direction:column; padding:22px; border:1px solid var(--style-line); border-top:3px solid var(--style-accent); border-radius:var(--style-radius);
+ background:linear-gradient(145deg,#fff,var(--style-bg)); box-shadow:inset 0 1px 0 #fff,0 6px 18px #1023380a;
+}
+.admin-shell .overview-content-tile > .admin-kicker { align-self:flex-start; }
+html[data-theme][data-admin-style] .admin-shell .overview-content-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:auto; padding-top:14px; }
+html[data-theme][data-admin-style] .admin-shell .admin-destinations .overview-content-actions a.overview-content-link {
+ display:inline-flex; padding:10px 14px; border:1px solid var(--style-accent); border-radius:var(--control-radius); background:linear-gradient(180deg,#ffffff1c,transparent 70%),var(--style-accent); color:#fff; font-weight:700; font-size:14px;
+ box-shadow:inset 0 1px 0 #ffffff55,0 2px 0 color-mix(in srgb,var(--style-accent) 60%,#18212b),0 4px 7px #101c2b18;
+}
+html[data-theme][data-admin-style] .admin-shell .admin-destinations .overview-content-actions a.overview-content-link:hover { background:var(--accent-hover); transform:none; }
