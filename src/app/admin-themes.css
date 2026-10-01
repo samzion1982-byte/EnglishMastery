@@ -174,3 +174,24 @@ html[data-theme][data-admin-style] .admin-shell .admin-identity-card .side-brand
 html[data-theme][data-admin-style] .admin-shell .admin-identity-card .side-brand em {
  display:block; margin-top:5px; color:var(--style-glow); font-size:10px; font-style:normal; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
 }
+
+/* A four-second light sweep confined to the Student Hub border. */
+@property --hub-border-angle {
+ syntax:'<angle>';
+ initial-value:0deg;
+ inherits:false;
+}
+html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[href='/'] { position:relative; }
+html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[href='/']::after {
+ content:''; position:absolute; inset:-1px; padding:2px; border-radius:inherit; pointer-events:none;
+ background:conic-gradient(from var(--hub-border-angle),#58b6a533 0deg 230deg,#7fffe0 290deg,#f3fff9 320deg,#58b6a533 360deg);
+ -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+ -webkit-mask-composite:xor;
+ mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+ mask-composite:exclude;
+ animation:hub-border-run 4s linear infinite;
+}
+@keyframes hub-border-run { to { --hub-border-angle:360deg; } }
+@media(prefers-reduced-motion:reduce) {
+ html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[href='/']::after { animation:none; }
+}
