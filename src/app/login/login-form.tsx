@@ -6,7 +6,7 @@ import { createBrowserSupabase } from '@/lib/supabase';
 import { STUDENT_DEFAULT_PASSWORD, isAdminStaff, isSchoolStaff } from '@/lib/access';
 import { readCompanion } from '@/lib/companion';
 
-type Intent = 'school' | 'individual' | 'admin';
+import { loginIntent, readLoginPreference, rememberLoginPreference, type LoginIntent as Intent } from '@/lib/login-preference';
 
 function concealTemporaryPassword(form: HTMLFormElement) {
   form.querySelectorAll<HTMLInputElement>('[data-password-field]').forEach((field) => {
@@ -28,17 +28,12 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
   const supabase = useMemo(() => createBrowserSupabase(), []);
 
   useEffect(() => {
-    const as = params.get('as');
-    if (as === 'admin') setIntent('admin');
-    if (as === 'individual') setIntent('individual');
-    if (as === 'school') setIntent('school');
+    const preferred = loginIntent(params.get('as')) || readLoginPreference() || initialIntent;
+    setIntent(preferred);
     if (params.get('error') === 'not-admin') setMessage('This account does not have admin access.');
     if (params.get('error') === 'licence') setMessage('This individual licence is not active.');
-  }, [params]);
+  }, [params, initialIntent]);
 
-  useEffect(() => {
-    document.cookie = `em-login-as=${intent}; Path=/; Max-Age=31536000; SameSite=Lax`;
-  }, [intent]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -129,6 +124,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
           return;
         }
       }
+      rememberLoginPreference(isAdminStaff(role) || isSchoolStaff(role) ? 'admin' : intent);
       leaving = true;
       if (temporary) concealTemporaryPassword(form);
       window.location.assign(profile?.must_change_password
