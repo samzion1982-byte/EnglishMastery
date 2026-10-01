@@ -4807,3 +4807,8 @@ html[data-theme-mode='light'] .admin-shell .report-date-grid input[type='date'] 
 .admin-shell .report-school-option input[type='checkbox'] { width: 18px; height: 18px; flex: 0 0 18px; accent-color: var(--accent); }
 .report-school-option span { overflow-wrap: anywhere; }
 .report-school-option small { display: block; color: var(--text-3); margin-top: 3px; }
+
+.report-school-search { display: grid; gap: 8px; margin-bottom: 14px; }
+.report-school-list { max-height: min(42dvh, 380px); }
+.report-school-list > .admin-note { padding: 12px 14px; }
+.report-dialog-actions { flex-wrap: wrap; }

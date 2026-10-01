@@ -53,10 +53,18 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
   const [notice, setNotice, noticeTone] = useNotice('');
   const [rangeOpen, setRangeOpen] = useState(false);
   const [rangeAll, setRangeAll] = useState(false);
+  const [reportStep, setReportStep] = useState<'schools' | 'dates'>('dates');
+  const [schoolSearch, setSchoolSearch] = useState('');
+  const choosingSchools = rangeAll && reportStep === 'schools';
+  const filteredSchools = schools.filter(school => `${school.name} ${school.school_code || ''}`.toLowerCase().includes(schoolSearch.trim().toLowerCase()));
   const [selectedSchools, setSelectedSchools] = useState<string[]>([]);
   const [start, setStart] = useState('');
   const [end, setEnd] = useState(todayIso);
   const dialog = useDialog<HTMLElement>(() => { if (busy !== 'download' && busy !== 'folder') setRangeOpen(false); }, rangeOpen);
+
+  useEffect(() => {
+    if (rangeOpen) dialog.current?.querySelector<HTMLElement>(choosingSchools ? 'input[type=search]' : 'input[type=date]')?.focus();
+  }, [rangeOpen, choosingSchools, dialog]);
 
   async function loadSchools() {
     const { data, error } = await supabase.from('em_licences').select('id, name, school_code').eq('kind', 'school').order('name');
@@ -133,6 +141,8 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
       return;
     }
     setRangeAll(all);
+    setReportStep(all ? 'schools' : 'dates');
+    setSchoolSearch('');
     setSelectedSchools(all ? schools.map(school => school.id) : []);
     setNotice('');
     setEnd(todayIso());
@@ -145,6 +155,7 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
   }
 
   async function generate() {
+    if (busy || choosingSchools) return;
     if (!end) {
       setNotice('Choose an end date.', 'error');
       return;
@@ -289,25 +300,33 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
         <div className="report-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setRangeOpen(false); }}>
           <section ref={dialog} className="report-dialog" role="dialog" aria-modal="true" aria-labelledby="report-dates-title">
             <header>
-              <p className="admin-kicker">Report period</p>
-              <h2 id="report-dates-title">{rangeAll ? 'Choose schools' : (desk?.school || 'Generate Report')}</h2>
+              <p className="admin-kicker">{rangeAll ? `Step ${choosingSchools ? 1 : 2} of 2` : 'Report period'}</p>
+              <h2 id="report-dates-title">{choosingSchools ? 'Choose schools' : rangeAll ? 'Choose reporting period' : (desk?.school || 'Generate Report')}</h2>
               <p>
-                {rangeAll
+                {choosingSchools ? 'Choose schools, then continue to set the reporting period.' : rangeAll
                   ? 'Leave the start date empty and each school begins on the day its tracker was uploaded. The end date is today unless you change it. The workbooks are downloaded together as a ZIP file.'
                   : 'The start date is the day this year’s tracker was uploaded, or 1 June if that day is not on record. Change either date if you need a different period.'}
               </p>
             </header>
-            <form onSubmit={(event) => { event.preventDefault(); void generate(); }}>
-              {rangeAll && (
+            <form key={reportStep} onSubmit={(event) => {
+              event.preventDefault();
+              if (choosingSchools) { if (selectedSchools.length) setReportStep('dates'); }
+              else void generate();
+            }}>
+              {choosingSchools ? (
                 <fieldset className="report-school-picker" disabled={!!busy}>
                   <legend>Schools to include</legend>
+                  <label className="report-school-search">Search schools
+                    <input type="search" value={schoolSearch} onChange={event => setSchoolSearch(event.target.value)} placeholder="School name or code" />
+                  </label>
                   <div className="report-school-tools">
                     <span aria-live="polite">{selectedSchools.length} of {schools.length} selected</span>
                     <button type="button" onClick={() => setSelectedSchools(schools.map(school => school.id))}>Select all</button>
                     <button type="button" onClick={() => setSelectedSchools([])}>Clear all</button>
                   </div>
                   <div className="report-school-list">
-                    {schools.map(school => (
+                    {!filteredSchools.length && <p className="admin-note">No schools match your search.</p>}
+                    {filteredSchools.map(school => (
                       <label key={school.id} className="report-school-option">
                         <input type="checkbox" checked={selectedSchools.includes(school.id)} onChange={event => {
                           const checked = event.target.checked;
@@ -318,7 +337,8 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
                     ))}
                   </div>
                 </fieldset>
-              )}
+              ) : (<>
+              {rangeAll && <p className="report-span">{selectedSchools.length} schools selected</p>}
               <div className="report-date-grid">
                 <label>
                   Start date
@@ -330,10 +350,12 @@ export function ReportsManager({ role, designation, licenceId }: { role: string;
                 </label>
               </div>
               <p className="report-span">{start && end ? `${prettyDate(start)} – ${prettyDate(end)}` : end ? `Through ${prettyDate(end)}` : 'Choose the end date.'}</p>
+              </>)}
               <div aria-live="polite">{notice && <p className={`notice ${noticeTone}`}>{notice}</p>}</div>
               <div className="report-dialog-actions">
                 <button type="button" disabled={!!busy} onClick={() => setRangeOpen(false)}>Cancel</button>
-                <button className="go" type="submit" disabled={!!busy || (rangeAll && !selectedSchools.length)}>{busy ? 'Building…' : rangeAll ? `Generate reports (${selectedSchools.length})` : 'Generate Report'}</button>
+                {rangeAll && !choosingSchools && <button type="button" disabled={!!busy} onClick={() => setReportStep('schools')}>Back to schools</button>}
+                <button className="go" type="submit" disabled={!!busy || (rangeAll && !selectedSchools.length)}>{busy ? 'Building…' : choosingSchools ? 'Continue to reporting period' : rangeAll ? `Generate reports (${selectedSchools.length})` : 'Generate Report'}</button>
               </div>
             </form>
           </section>
