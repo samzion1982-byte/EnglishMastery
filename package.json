@@ -1,0 +1,35 @@
+{
+  "name": "english-mastery",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test:beginner": "node scripts/build-beginner-course.cjs --check && node tests/beginner-course.cjs",
+    "test:speaking": "node tests/speaking.cjs && node tests/speaking-follow.cjs && node tests/speaking-api-regressions.cjs && node tests/speaking-permission-regression.cjs && node tests/speaking-restart-regression.cjs",
+    "test:speech": "node tests/speech-usage.cjs",
+    "test:grammar": "node tests/practice-languagetool.cjs && node tests/languagetool.cjs",
+    "test:languagetool": "node tests/languagetool.cjs"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "2.117.0",
+    "exceljs": "^4.4.0",
+    "hyphen": "^1.14.1",
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}

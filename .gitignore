@@ -1,0 +1,22 @@
+node_modules/
+.next/
+out/
+coverage/
+.env*
+!.env.example
+*.tsbuildinfo
+.vercel/
+
+# Local tools, scratch output and archived working copies
+.npm-cache/
+.tmp/
+tmp/
+/20??-??-??/
+/notes/
+/NUL
+*.log
+*.pem
+*.key
+.aws/
+.codex/
+.agents/
