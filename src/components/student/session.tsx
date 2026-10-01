@@ -9,7 +9,7 @@ import { WordHead, WordReveal } from './word-view';
 import type { WordEntry } from '@/lib/dictionary';
 import type { Language, LearnerData, StudyWord } from '@/lib/learner';
 import type { ThesaurusId } from '@/lib/thesaurus';
-import { distractorPool, learnedToday, quizOptions, streakOf, type SessionItem } from '@/lib/learner-stats';
+import { distractorPool, learnedToday, levelsOf, quizOptions, streakOf, type SessionItem } from '@/lib/learner-stats';
 import { playCue } from '@/lib/sound';
 import { XP } from '@/lib/srs';
 import { entriesFor } from '@/lib/word-store';
@@ -22,12 +22,14 @@ function LearnCard({
   language,
   thesaurus,
   revisit,
+  counter,
   onDone,
 }: {
   word: StudyWord;
   language: Language;
   thesaurus: ThesaurusId;
   revisit: boolean;
+  counter: string;
   onDone: () => void;
 }) {
   const { word: resolved, loading } = useWord(word);
@@ -56,7 +58,7 @@ function LearnCard({
   return (
     <div className="card study-card open">
       <p className="eyebrow accent">
-        <Icon kind="sparkle" /> {revisit ? 'Learned' : 'New word'}
+        <Icon kind="sparkle" /> {revisit ? 'Review' : 'New word'} · {counter}
       </p>
       <WordHead
         word={word}
@@ -329,6 +331,12 @@ export function Session({
   const done = index >= items.length;
   const revisiting = items.every(item => item.kind === 'revisit');
   const answered = Object.keys(results).length;
+  const level = word && item?.kind === 'learn'
+    ? levelsOf(data, word.bucket, data.profile.batchSize).find(level => level.words.some(entry => entry.id === word.id))
+    : undefined;
+  const counter = level
+    ? `${level.words.findIndex(entry => entry.id === item.wordId) + 1}/${level.words.length}`
+    : `${index + 1}/${items.length}`;
 
   function go(to: number) {
     setIndex(Math.max(0, Math.min(items.length, to)));
@@ -379,7 +387,7 @@ export function Session({
           <section className="card study-card">
             <h2>Review complete</h2>
             <p>You revisited the learned words in this level.</p>
-            <button type="button" className="s-btn primary" onClick={onExit}>Back to vocabulary</button>
+            <button type="button" className="s-btn primary" onClick={onAgain}>Continue to the next word</button>
             <button type="button" className="s-btn ghost" onClick={() => go(0)}>Look again</button>
           </section>
         ) : done ? (
@@ -391,6 +399,7 @@ export function Session({
             language={data.profile.language}
             thesaurus={data.profile.thesaurus}
             revisit={item.kind === 'revisit' || !!result}
+            counter={counter}
             onDone={() => {
               record('learned');
               go(index + 1);
@@ -442,7 +451,7 @@ export function Session({
             <Icon kind="close" />
           </button>
           <span className="session-count">
-            {index + 1}/{items.length}
+            {counter}
           </span>
           <div className="session-progress" role="progressbar" aria-label="Answered cards" aria-valuemin={0} aria-valuemax={items.length} aria-valuenow={revisiting ? index : answered}>
             <span style={{ height: `${((revisiting ? index : answered) / items.length) * 100}%` }} />

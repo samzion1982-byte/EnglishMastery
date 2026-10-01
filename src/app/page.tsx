@@ -14,7 +14,7 @@ import type { LiveBucket } from '@/lib/vocab';
 import { setEntryOwner, warmEntries } from '@/lib/word-store';
 
 type View = 'home' | 'session' | 'profile';
-type Builder = { build: (data: LearnerData) => SessionItem[]; empty: string };
+type Builder = { build: (data: LearnerData) => SessionItem[]; empty: string; next?: Builder };
 
 export default function Home() {
   const [data, setData] = useState<LearnerData | null>(null);
@@ -127,7 +127,13 @@ export default function Home() {
       run({ build: (d) => {
         const selected = levelsOf(d, bucket, size).find(candidate => candidate.number === level.number);
         return selected ? revisitLevel(d, selected) : [];
-      }, empty: 'No learned words in this level yet.' });
+      }, empty: 'No learned words in this level yet.', next: {
+        build: (d) => {
+          const next = levelsOf(d, bucket, size).find(candidate => candidate.number >= level.number && candidate.words.some(word => !d.progress[word.id]));
+          return next ? levelSession(d, next) : [];
+        },
+        empty: 'You have learned every word in this track.',
+      } });
     },
     onQuiz: (bucket) => {
       run({ build: (d) => buildSession('practice', d, bucket), empty: 'Learn a few words first, then try a quiz.' });
@@ -257,7 +263,7 @@ export default function Home() {
               items={items}
               onRecord={record}
               onExit={() => setView('home')}
-              onAgain={() => (last.current ? run(last.current) : setView('home'))}
+              onAgain={() => (last.current ? run(last.current.next ?? last.current) : setView('home'))}
             />
           ) : view === 'profile' ? (
             <ProfileView
