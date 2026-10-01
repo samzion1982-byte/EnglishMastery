@@ -195,3 +195,7 @@ html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[hr
 @media(prefers-reduced-motion:reduce) {
  html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[href='/']::after { animation:none; }
 }
+
+html[data-theme][data-admin-style] .admin-shell .admin-content-submenu { min-width:0; padding:10px 0; }
+html[data-theme][data-admin-style] .admin-shell .admin-content-submenu > summary { font-size:11px; letter-spacing:.06em; padding:6px 4px; }
+html[data-theme][data-admin-style] .admin-shell .admin-content-submenu > .admin-nav-items { margin-top:8px; margin-left:6px; padding-left:10px; border-left:1px solid #ffffff28; }

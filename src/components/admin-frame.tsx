@@ -127,7 +127,12 @@ export function AdminFrame({
           <section className="admin-nav-group" aria-label="Workspace">
             <p className="nav-label">Workspace</p>
             <SideLink href="/admin/overview" current={path === '/admin/overview'} onNavigate={() => setOpen(false)} icon="home" label="Overview" />
-            {nav(content)}
+            {content.length > 0 && (
+              <details className="admin-nav-fold admin-content-submenu" open>
+                <summary>Learning Content</summary>
+                <div className="admin-nav-items">{nav(content)}</div>
+              </details>
+            )}
             {nav(access)}
             {nav(reports)}
           </section>
