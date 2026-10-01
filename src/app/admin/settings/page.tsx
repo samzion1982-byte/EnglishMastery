@@ -1,3 +1,4 @@
+import { AdminThemeSettings } from '@/components/admin-theme-settings';
 import { redirect } from 'next/navigation';
 import { TranslationControls } from '@/components/translation-controls';
 import { isFullAccess } from '@/lib/access';
@@ -11,13 +12,15 @@ export default async function Settings() {
       <header className="workspace-heading">
         <p>WORKSPACE / SETTINGS</p>
         <h1>Settings</h1>
-        <span>Theme and font are in the account menu. Translation languages stay here.</span>
+        <span>Personalise your admin theme and manage translation languages.</span>
       </header>
       <div className="settings-layout">
         <nav aria-label="Settings sections">
+          <a href="#themes">Themes</a>
           <a href="#languages">Translation languages</a>
         </nav>
         <div className="settings-sections">
+          <AdminThemeSettings />
           <TranslationControls />
         </div>
       </div>

@@ -1,0 +1,20 @@
+/* Opt-in admin styles; Classic retains all existing rules. */
+html[data-admin-style='emerald'] .admin-shell { --style-accent:#155347; --style-bg:#edf5ef; --style-line:#d2e6da; --style-radius:20px; --style-shadow:0 8px 24px #15534712; }
+html[data-admin-style='ocean'] .admin-shell { --style-accent:#175b83; --style-bg:#edf5fa; --style-line:#ccdeeb; --style-radius:6px; --style-shadow:0 2px 6px #175b8310; }
+html[data-admin-style='amethyst'] .admin-shell { --style-accent:#603e80; --style-bg:#f3eff8; --style-line:#e0d4eb; --style-radius:16px; --style-shadow:0 10px 28px #603e801c; }
+html[data-admin-style='sandstone'] .admin-shell { --style-accent:#79502d; --style-bg:#f7f2e9; --style-line:#e6d9c4; --style-radius:9px; --style-shadow:0 3px 0 #79502d12; }
+html[data-admin-style]:not([data-admin-style='classic']) .admin-shell { --accent:var(--style-accent); --accent-fg:var(--style-accent); --accent-soft:var(--style-bg); --line:var(--style-line); --line-2:var(--style-line); background:var(--style-bg); }
+html[data-admin-style]:not([data-admin-style='classic']) .admin-shell .admin-main { background:var(--style-bg); }
+html[data-admin-style]:not([data-admin-style='classic']) .admin-shell .admin-side { background:linear-gradient(165deg,var(--style-accent),color-mix(in srgb,var(--style-accent) 45%,#091522)); }
+html[data-admin-style]:not([data-admin-style='classic']) .admin-shell :is(.admin-card,.settings-panel,.school-card,.translation-language,.report-dialog,.admin-destinations a,.perm-head) { background:linear-gradient(155deg,#fff,var(--style-bg)); border-color:var(--style-line); border-radius:var(--style-radius); box-shadow:var(--style-shadow); }
+html[data-admin-style]:not([data-admin-style='classic']) .admin-shell :is(.workspace-heading,.page-head) { background:linear-gradient(110deg,#fff,var(--style-bg)); border-color:var(--style-line); border-left-color:var(--style-accent); border-radius:var(--style-radius); }
+html[data-admin-style]:not([data-admin-style='classic']) .admin-shell .go { background:var(--style-accent); border-color:var(--style-accent); color:#fff; box-shadow:inset 0 1px 0 #ffffff33,0 2px 0 #0002; }
+html[data-admin-style]:not([data-admin-style='classic']) .admin-shell .admin-kicker { background:var(--style-bg); color:var(--style-accent); border-color:var(--style-line); box-shadow:none; }
+.admin-style-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; }
+.admin-shell .admin-style-grid button { display:flex; flex-direction:column; gap:10px; padding:14px; text-align:left; background:var(--surface); color:var(--text); border:1px solid var(--line); border-radius:12px; }
+.admin-shell .admin-style-grid button[aria-pressed='true'] { outline:2px solid var(--accent); outline-offset:2px; }
+.admin-style-grid small { color:var(--text-2); }
+.admin-style-preview { display:flex; width:100%; height:96px; overflow:hidden; gap:12px; }
+.admin-style-preview > i { width:25%; }
+.admin-style-preview > span { flex:1; margin:14px 12px 14px 0; border-radius:5px; padding:12px; box-shadow:0 3px 8px #0001; }
+.admin-style-preview b { display:block; width:65%; height:8px; border-radius:4px; opacity:.5; }
