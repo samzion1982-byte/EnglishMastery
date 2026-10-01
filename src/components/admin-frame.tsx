@@ -114,30 +114,23 @@ export function AdminFrame({
         <nav>
           <SideLink href="/" current={false} onNavigate={() => setOpen(false)} icon="home" label="Student Hub" />
           {(isFullAccess(role) || distribution.length > 0 || logs.length > 0 || permissions.length > 0) && (
-            <section className="admin-nav-group" aria-label="Admin">
-              <p className="nav-label">Admin</p>
+            <details className="admin-nav-group admin-nav-fold" open>
+              <summary>Admin</summary>
+              <div className="admin-nav-items">
               {isFullAccess(role) && <SideLink href="/admin/settings" current={path === '/admin/settings'} onNavigate={() => setOpen(false)} icon="settings" label="Settings" />}
               {nav(permissions)}
               {nav(distribution)}
               {nav(logs)}
-            </section>
+              </div>
+            </details>
           )}
-          <p className="nav-label">Workspace</p>
-          <SideLink href="/admin/overview" current={path === '/admin/overview'} onNavigate={() => setOpen(false)} icon="home" label="Overview" />
-          <p className="nav-label">Learning content</p>
-          {nav(content)}
-          {access.length > 0 && (
-            <>
-              <p className="nav-label">People & access</p>
-              {nav(access)}
-            </>
-          )}
-          {reports.length > 0 && (
-            <>
-              <p className="nav-label">Reports</p>
-              {nav(reports)}
-            </>
-          )}
+          <section className="admin-nav-group" aria-label="Workspace">
+            <p className="nav-label">Workspace</p>
+            <SideLink href="/admin/overview" current={path === '/admin/overview'} onNavigate={() => setOpen(false)} icon="home" label="Overview" />
+            {nav(content)}
+            {nav(access)}
+            {nav(reports)}
+          </section>
         </nav>
       </aside>
       <main id="admin-content" className="admin-main"><div className="admin-context"><span>Administration <span aria-hidden="true">/</span> {path === '/admin/settings' ? 'Settings' : path === '/admin/overview' ? 'Overview' : path.startsWith('/admin/licences/') ? 'School roster' : path === '/admin/staff' ? 'Staff' : items.find(p=>p.path===path)?.label || 'Workspace'}</span><Link href="/">View student hub ↗</Link></div>{children}</main>
