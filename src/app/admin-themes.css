@@ -233,3 +233,11 @@ html[data-theme][data-admin-style] .admin-shell .admin-workspace .admin-destinat
 html[data-theme][data-admin-style] .admin-shell .admin-workspace .admin-destinations > article.overview-content-tile {
  background:linear-gradient(180deg,color-mix(in srgb,var(--style-bg) 85%,white),var(--style-bg));
 }
+
+/* The Permissions frame must not retain the legacy navy border/shadow. */
+html[data-theme][data-admin-style] .admin-shell .perm-board {
+ background:var(--style-bg);
+ border:1px solid var(--style-line);
+ border-top:3px solid var(--style-accent);
+ box-shadow:inset 0 1px 0 #ffffff55,0 8px 20px color-mix(in srgb,var(--style-accent) 12%,transparent);
+}
