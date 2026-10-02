@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AssignClasses, loadCoverageLabels } from '@/components/assign-classes';
+import { fetchAll } from '@/lib/fetch-all';
 import { Icon } from '@/components/icon';
 import { useNotice } from '@/components/use-notice';
 import { errorText } from '@/lib/error-text';
@@ -27,7 +28,7 @@ function validEmail(value: string) {
   return /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(value);
 }
 
-export function PrincipalStaff({ licenceId, school, code }: { licenceId: string; school: string; code: string | null }) {
+export function PrincipalStaff({ licenceId, school, code, schoolAdmin = false }: { licenceId: string; school: string; code: string | null; schoolAdmin?: boolean }) {
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const [rows, setRows] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +45,11 @@ export function PrincipalStaff({ licenceId, school, code }: { licenceId: string;
     setLoadError('');
     const session = await supabase.auth.getUser();
     setMe(session.data.user?.id || '');
-    const { data, error } = await supabase.rpc('list_my_school_staff');
+    const { data, error } = schoolAdmin
+      ? await fetchAll<Person>((from, to) => supabase.from('em_school_staff')
+          .select('id, user_id, staff_name, designation, email, rank_level, sort_no, active')
+          .eq('licence_id', licenceId).order('sort_no').order('id').range(from, to))
+      : await supabase.rpc('list_my_school_staff');
     if (error) {
       setLoadError(/list_my_school_staff|schema cache|does not exist/i.test(error.message) ? SQL : error.message);
       setRows([]);

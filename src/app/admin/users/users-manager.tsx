@@ -1,4 +1,5 @@
 'use client';
+import { PrincipalStaff } from '../staff/principal-staff';
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -391,93 +392,11 @@ export function UsersManager() {
       ) : openSchool ? (
         <>
           <p className="crumb-back">
-            <button type="button" onClick={() => { setOpenId(null); setQuery(''); setStaffNote(''); }}>
+            <button type="button" onClick={() => { setOpenId(null); setQuery(''); setStaffNote(''); void load(); }}>
               <Icon kind="back" /> All schools
             </button>
           </p>
-          <div className="licence-summary cols-3">
-            <article className="admin-card"><span>Staff</span><strong>{schoolPeople.length}</strong></article>
-            <article className="admin-card"><span>Active</span><strong>{activeCount}</strong></article>
-            <article className="admin-card"><span>Inactive</span><strong>{schoolPeople.length - activeCount}</strong></article>
-          </div>
-          <section className="admin-card">
-            <div className="card-head"><h2>Add staff</h2></div>
-            <form className="staff-add" onSubmit={(event) => void addStaff(event)}>
-              <label>
-                Name
-                <input required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
-              </label>
-              <label>
-                Email
-                <input required type="email" value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
-              </label>
-              <label>
-                Designation
-                <select value={draft.designation} onChange={(event) => setDraft({ ...draft, designation: event.target.value as StaffDesignation })}>
-                  {POSTS.map((post) => (
-                    <option key={post} value={post}>{STAFF_LABEL[post]} · {STAFF_LEVEL[post]}</option>
-                  ))}
-                </select>
-              </label>
-              <button className="go" type="submit" disabled={!!working}>{working === 'add' ? 'Adding…' : 'Add to school'}</button>
-            </form>
-          </section>
-          {staffNote ? <p className={`notice ${staffTone}`} role={staffTone === 'error' ? 'alert' : 'status'}>{staffNote}</p> : null}
-          <div className="admin-filterbar">
-            <label>
-              Search this school
-              <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, email, or designation" />
-            </label>
-            <label>
-              Status
-              <select value={staffStatus} onChange={(event) => setStaffStatus(event.target.value)}>
-                <option value="all">All statuses</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </label>
-            {openId ? <AssignClasses licenceId={openId} onSaved={setClasses} /> : null}
-          </div>
-          <section className="admin-card table-card" aria-busy={loading}>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Designation</th>
-                  <th>Classes</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? <tr><td colSpan={6}>Loading staff…</td></tr> : null}
-                {!loading && visibleStaff.length === 0 ? (
-                  <tr><td colSpan={6}>{schoolPeople.length ? 'No staff match these filters.' : 'No staff yet. Add the first person above.'}</td></tr>
-                ) : null}
-                {!loading && visibleStaff.slice((currentPage - 1) * 25, currentPage * 25).map((row) => (
-                  <tr key={row.id} className={row.active ? undefined : 'is-off'}>
-                    <td>{row.name}</td>
-                    <td>{row.email || '—'}</td>
-                    <td>{designationLabel(row.designation)}</td>
-                    <td>{row.designation === 'principal' ? 'Whole school' : (classes[row.id] || '—')}</td>
-                    <td><span className={row.active ? 'status on' : 'status off'}>{row.active ? 'Active' : 'Inactive'}</span></td>
-                    <td>
-                      <div className="licence-actions">
-                        <button type="button" disabled={!!working} onClick={() => void setStaffActive(row, !row.active)}>
-                          {working === row.id ? 'Saving…' : row.active ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button type="button" className="danger" disabled={!!working} onClick={() => void removeStaff(row)}>
-                          {working === `delete-${row.id}` ? 'Deleting…' : 'Delete'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-          <Pagination page={currentPage} pages={pages} total={visibleStaff.length} onPage={setPage} />
+          <PrincipalStaff key={openSchool.id} licenceId={openSchool.id} school={openSchool.name} code={openSchool.code} schoolAdmin />
         </>
       ) : (
         <>
