@@ -241,3 +241,8 @@ html[data-theme][data-admin-style] .admin-shell .perm-board {
  border-top:3px solid var(--style-accent);
  box-shadow:inset 0 1px 0 #ffffff55,0 8px 20px color-mix(in srgb,var(--style-accent) 12%,transparent);
 }
+
+/* Keep trash controls flat in every interaction state. */
+html[data-theme][data-admin-style] .admin-shell button:has(svg[data-icon='trash']),
+html[data-theme][data-admin-style] .admin-shell button:has(svg[data-icon='trash']):is(:hover,:active,:focus-visible,:disabled) { box-shadow:none; filter:none; text-shadow:none; }
+html[data-theme][data-admin-style] .admin-shell svg[data-icon='trash'] { filter:none; box-shadow:none; }

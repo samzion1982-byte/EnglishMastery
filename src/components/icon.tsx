@@ -48,6 +48,7 @@ const paths: Record<string, string> = {
 export function Icon({ kind = 'diamond' }: { kind?: string }) {
   return (
     <svg
+      data-icon={kind}
       width={20}
       height={20}
       viewBox="0 0 24 24"
