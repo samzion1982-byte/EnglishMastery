@@ -122,14 +122,14 @@ html[data-theme][data-admin-style] .admin-shell :is(button:not([role=switch],.no
 html[data-theme][data-admin-style] .admin-shell button:disabled { box-shadow:inset 0 1px 0 #ffffff25; }
 
 /* One identity card and a separate administrative navigation group. */
-html[data-theme][data-admin-style] .admin-shell .admin-identity-card { border:1px solid #ffffff20; border-radius:14px; background:linear-gradient(135deg,#ffffff0d,#ffffff03); overflow:hidden; flex-shrink:0; }
+html[data-theme][data-admin-style] .admin-shell .admin-identity-card { border:1px solid #ffffff20; border-radius:14px; background:repeating-linear-gradient(0deg,#ffffff04 0 1px,transparent 1px 4px),linear-gradient(135deg,#ffffff0d,#ffffff03); overflow:hidden; flex-shrink:0; }
 html[data-theme][data-admin-style] .admin-shell .admin-identity-card .side-brand { margin:0; padding:14px; border:0; border-bottom:1px solid #ffffff20; border-radius:0; background:transparent; }
 html[data-theme][data-admin-style] .admin-shell .admin-identity-card .admin-user-badge { margin:0; padding:14px; border:0; border-radius:0; background:transparent; }
 html[data-theme][data-admin-style] .admin-shell .admin-user-badge > span:nth-child(2) { flex:1; min-width:0; }
 html[data-theme][data-admin-style] .admin-shell button.admin-signout { width:34px; min-width:34px; height:34px; min-height:34px; padding:8px; border-radius:50%; border:1px solid #ff8a96; background:linear-gradient(#e94860,#b81d39); color:#fff; box-shadow:inset 0 1px 0 #ffffff55,0 2px 0 #790d23,0 4px 8px #0003; flex-shrink:0; }
 html[data-theme][data-admin-style] .admin-shell button.admin-signout:hover { background:#a91631; color:#fff; }
 html[data-theme][data-admin-style] .admin-shell button.admin-signout svg { width:18px; height:18px; }
-html[data-theme][data-admin-style] .admin-shell .admin-nav-group { display:grid; gap:8px; padding:12px; margin-top:12px; border:1px solid #ffffff24; border-radius:12px; background:#ffffff05; }
+html[data-theme][data-admin-style] .admin-shell .admin-nav-group { display:grid; gap:8px; padding:12px; margin-top:12px; border:1px solid #ffffff24; border-radius:12px; background:repeating-linear-gradient(125deg,#ffffff04 0 1px,transparent 1px 5px),#ffffff05; }
 html[data-theme][data-admin-style] .admin-shell .admin-nav-group .nav-label { margin:0 0 4px; }
 
 html[data-theme][data-admin-style] .admin-shell .overview-content-tile {
@@ -164,7 +164,7 @@ html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[hr
 /* Branded header above the account details. */
 html[data-theme][data-admin-style] .admin-shell .admin-identity-card .side-brand {
  padding:18px 14px;
- background:radial-gradient(ellipse at 0% 0%,color-mix(in srgb,var(--style-glow) 23%,transparent),transparent 75%),linear-gradient(130deg,color-mix(in srgb,var(--style-accent) 48%,#111c27),#111923);
+ background:repeating-linear-gradient(120deg,#ffffff07 0 1px,transparent 1px 5px),radial-gradient(ellipse at 0% 0%,color-mix(in srgb,var(--style-glow) 23%,transparent),transparent 75%),linear-gradient(130deg,color-mix(in srgb,var(--style-accent) 48%,#111c27),#111923);
  border-bottom:1px solid color-mix(in srgb,var(--style-glow) 35%,transparent);
  box-shadow:inset 0 2px 0 color-mix(in srgb,var(--style-glow) 65%,transparent),inset 0 -1px 0 #0004;
 }
@@ -205,7 +205,7 @@ html[data-theme][data-admin-style] .admin-shell .admin-content-submenu > summary
 
 /* Raised, theme-aware labels rather than flat white captions. */
 html[data-theme][data-admin-style] .admin-shell :is(.admin-kicker,.admin-destinations a > span,.perm-grid thead strong) {
- background:linear-gradient(180deg,#ffffffb3,transparent 65%),color-mix(in srgb,var(--style-glow) 28%,var(--style-bg));
+ background:repeating-linear-gradient(120deg,#10233809 0 1px,transparent 1px 4px),linear-gradient(180deg,#ffffffb3,transparent 65%),color-mix(in srgb,var(--style-glow) 28%,var(--style-bg));
  color:var(--style-accent); border:1px solid color-mix(in srgb,var(--style-accent) 25%,var(--style-line));
  border-radius:7px; box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 #0000000c,0 2px 3px #10233812;
  text-shadow:0 1px 0 #ffffffaa; font-weight:700;
@@ -222,3 +222,8 @@ html[data-theme][data-admin-style] .admin-shell .admin-main :is(.settings-panel,
 }
 html[data-theme][data-admin-style] .admin-shell .admin-main :is(.report-date-grid label,.report-school-picker legend) { color:var(--style-accent); font-weight:700; text-shadow:0 1px 0 #fff; }
 html[data-theme][data-admin-style] .admin-shell .perm-grid thead .perm-hint { color:#fff; text-shadow:0 1px 2px #0005; }
+
+/* Fine paper grain on page headers, beneath their content. */
+html[data-theme][data-admin-style] .admin-shell :is(.workspace-heading,.page-head) {
+ background:repeating-linear-gradient(120deg,#10233805 0 1px,transparent 1px 5px),linear-gradient(115deg,#fff,var(--style-bg));
+}
