@@ -229,6 +229,7 @@ html[data-theme][data-admin-style] .admin-shell :is(.workspace-heading,.page-hea
 }
 
 /* Even theme tint across every Overview tile, including the combined content tile. */
-html[data-theme][data-admin-style] .admin-shell .admin-destinations > :is(a,.overview-content-tile) {
+html[data-theme][data-admin-style] .admin-shell .admin-workspace .admin-destinations > a,
+html[data-theme][data-admin-style] .admin-shell .admin-workspace .admin-destinations > article.overview-content-tile {
  background:linear-gradient(180deg,color-mix(in srgb,var(--style-bg) 85%,white),var(--style-bg));
 }
