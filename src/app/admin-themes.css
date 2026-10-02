@@ -227,3 +227,8 @@ html[data-theme][data-admin-style] .admin-shell .perm-grid thead .perm-hint { co
 html[data-theme][data-admin-style] .admin-shell :is(.workspace-heading,.page-head) {
  background:repeating-linear-gradient(120deg,#10233805 0 1px,transparent 1px 5px),linear-gradient(115deg,#fff,var(--style-bg));
 }
+
+/* Even theme tint across every Overview tile, including the combined content tile. */
+html[data-theme][data-admin-style] .admin-shell .admin-destinations > :is(a,.overview-content-tile) {
+ background:linear-gradient(180deg,color-mix(in srgb,var(--style-bg) 85%,white),var(--style-bg));
+}
