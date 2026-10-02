@@ -246,3 +246,7 @@ html[data-theme][data-admin-style] .admin-shell .perm-board {
 html[data-theme][data-admin-style] .admin-shell button:has(svg[data-icon='trash']),
 html[data-theme][data-admin-style] .admin-shell button:has(svg[data-icon='trash']):is(:hover,:active,:focus-visible,:disabled) { box-shadow:none; filter:none; text-shadow:none; }
 html[data-theme][data-admin-style] .admin-shell svg[data-icon='trash'] { filter:none; box-shadow:none; }
+
+/* Navigation and action labels are not editable; retain visible keyboard focus. */
+.admin-shell :is(button,summary,a.side-link,.side-brand) { caret-color:transparent; user-select:none; }
+.admin-shell :is(button,summary,a.side-link,.side-brand) :is(input,textarea,[contenteditable='true']) { caret-color:auto; user-select:text; }
