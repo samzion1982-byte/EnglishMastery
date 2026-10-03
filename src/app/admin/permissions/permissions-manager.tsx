@@ -20,8 +20,6 @@ type CategoryNode = {
   children: PageNode[];
 };
 
-type Person = { name: string; email: string; active: boolean };
-
 const COLUMNS = [
   { value: 'admin1', label: ROLE_LABELS.admin1, hint: '' },
   { value: 'user4', label: ROLE_LABELS.user4, hint: 'Principal' },
@@ -40,23 +38,7 @@ const TREE: CategoryNode[] = [
       { key: 'appendix', label: 'Appendix', kind: 'page' },
     ],
   },
-  {
-    key: 'access',
-    label: 'People & access',
-    kind: 'category',
-    children: [
-      { key: 'users', label: 'Staff', kind: 'page' },
-      { key: 'permissions', label: 'Permissions', kind: 'page' },
-    ],
-  },
-  {
-    key: 'distribution',
-    label: 'Distribution',
-    kind: 'category',
-    children: [
-      { key: 'licences', label: 'Licences', kind: 'page' },
-    ],
-  },
+
 ];
 
 const PAGES = TREE.flatMap((category) => category.children);
@@ -90,18 +72,10 @@ function aggregate(category: CategoryNode, role: string, matrix: Record<string, 
   return 'some';
 }
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
 export function PermissionsManager() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
   const [matrix, setMatrix] = useState(defaultMatrix);
   const [saved, setSaved] = useState(defaultMatrix);
-  const [people, setPeople] = useState<Record<string, Person[]>>({});
   const [open, setOpen] = useState<Record<string, boolean>>(() => Object.fromEntries(TREE.map((category) => [category.key, true])));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -112,10 +86,7 @@ export function PermissionsManager() {
   async function load() {
     setLoading(true);
     setLoadError('');
-    const [grants, profiles] = await Promise.all([
-      supabase.from('em_role_page_access').select('role, page_key, allowed'),
-      supabase.from('profiles').select('display_name, email, role, is_active').in('role', COLUMNS.map((column) => column.value)).order('display_name'),
-    ]);
+    const grants = await supabase.from('em_role_page_access').select('role, page_key, allowed');
     if (grants.error) {
       setLoadError(grants.error.message);
       setLoading(false);
@@ -128,19 +99,6 @@ export function PermissionsManager() {
     }
     setMatrix(next);
     setSaved(next);
-    const byRole: Record<string, Person[]> = {};
-    for (const column of COLUMNS) byRole[column.value] = [];
-    if (!profiles.error) {
-      for (const row of profiles.data || []) {
-        if (!byRole[row.role]) continue;
-        byRole[row.role].push({
-          name: (row.display_name || '').trim() || row.email || 'User',
-          email: row.email || '',
-          active: row.is_active !== false,
-        });
-      }
-    }
-    setPeople(byRole);
     setLoading(false);
   }
 
@@ -200,48 +158,32 @@ export function PermissionsManager() {
             Permissions
             {dirty ? <span className="perm-unsaved">Unsaved</span> : null}
           </h1>
-          <p>Choose which pages each level can open. Several people can share a level. Names appear above each column. Admin starts with every page on. Super Admin can change any of them.</p>
+          <p>Choose which learning pages each level can open. Staff management, Permissions and Licences are reserved for Super Admin.</p>
         </div>
         <div className="perm-actions">
           <button type="button" disabled={loading || saving} onClick={() => { setMatrix(defaultMatrix()); setNotice(''); }}>
             <Icon kind="repeat" /> Reset to defaults
           </button>
           <button type="button" className="go" disabled={loading || saving || !dirty} onClick={() => void save()}>
-            {saving ? 'Saving…' : 'Save permissions'}
+            {saving ? 'Savingâ€¦' : 'Save permissions'}
           </button>
         </div>
       </header>
       {notice ? <p className={`notice ${noticeTone}`} role={noticeTone === 'error' ? 'alert' : 'status'}>{notice}</p> : null}
       {loadError ? <p className="notice error" role="alert">Could not load permissions. {loadError} <button type="button" onClick={() => void load()}>Retry</button></p> : null}
       <section className="perm-board" aria-busy={loading}>
-        {loading ? <p className="perm-loading">Loading permissions…</p> : (
+        {loading ? <p className="perm-loading">Loading permissionsâ€¦</p> : (
           <div className="perm-scroll">
             <table className="perm-grid">
               <thead>
                 <tr>
                   <th><span className="perm-corner"><Icon kind="users" /> Category / page</span></th>
                   {COLUMNS.map((column) => {
-                    const assigned = (people[column.value] || []).filter((person) => person.active);
-                    const inactive = (people[column.value] || []).filter((person) => !person.active);
                     const tone = `perm-col perm-col-${column.value}`;
-                    const title = [
-                      ...assigned.map((person) => person.email && person.name !== person.email ? `${person.name} <${person.email}>` : person.name),
-                      ...inactive.map((person) => `${person.name} (inactive)`),
-                    ].join('\n');
                     return (
-                      <th key={column.value} className={tone} title={title || undefined}>
+                      <th key={column.value} className={tone}>
                         <span className="perm-bar" />
                         {column.hint ? <span className="perm-hint">{column.hint}</span> : null}
-                        {assigned.length ? (
-                          <span className="perm-names">
-                            {assigned.map((person) => (
-                              <span key={person.email || person.name} className="perm-chip" title={person.email || person.name}>
-                                <span className="perm-av">{initials(person.name)}</span>
-                                <span className="perm-chip-name">{person.name}</span>
-                              </span>
-                            ))}
-                          </span>
-                        ) : null}
                         <strong>{column.label}</strong>
                         <span className="perm-bulk">
                           <button type="button" className="perm-mini on" onClick={() => setRoleAll(column.value, true)}>All</button>

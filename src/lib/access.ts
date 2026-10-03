@@ -67,15 +67,13 @@ export function canOpenAdminPage(role: string | null | undefined, pageKey: strin
   const page = ADMIN_PAGES.find((p) => p.key === pageKey);
   if (page?.principalOnly) return designation === 'principal';
   if (page?.key === 'reports') return canOpenReports(role, designation);
-  if (page?.key === 'logs') return isSuperAdmin(role);
+  if ((SUPER_ONLY_PAGES as readonly string[]).includes(pageKey)) return isSuperAdmin(role);
   if (isSuperAdmin(role)) return true;
-  if (isSchoolStaff(role) && page?.superOnly) return false;
   const level = permissionRole(role, designation);
   if (!isAdminStaff(level)) return false;
   if (Object.prototype.hasOwnProperty.call(grants, pageKey)) return !!grants[pageKey];
   if (level === 'admin1') return true;
   if (page?.alwaysOn) return true;
-  if ((SUPER_ONLY_PAGES as readonly string[]).includes(pageKey)) return false;
   return !!grants[pageKey];
 }
 

@@ -19,5 +19,5 @@ export function IndividualValidity() {
     window.addEventListener('focus', load);
     return () => { alive = false; window.removeEventListener('focus', load); };
   }, []);
-  return validity === null ? null : <small className="licence-validity">Licence Valid upto : {validity}</small>;
+  return validity === null ? null : <small className="licence-validity">Validity upto : {validity}</small>;
 }
