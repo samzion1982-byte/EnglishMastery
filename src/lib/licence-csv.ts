@@ -24,7 +24,7 @@ export function licenceExpiry(value: string): string {
   if (!match) throw new Error('The licence validity date must use DD-MM-YYYY.');
   const [, day, month, year] = match.map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) throw new Error('The licence validity date is invalid.');
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) throw new Error(`The CSV validity date "${value.trim()}" is invalid. Check Validity Upto in the published sheet.`);
   return date.toISOString().slice(0, 10);
 }
 
@@ -44,10 +44,17 @@ export function checkCsvLicence(text: string, key: string, email: string, today 
   return { key: row[keyIndex].trim().toUpperCase(), validUntil };
 }
 
-export async function readCsvLicence(key: string, email: string) {
-  const response = await fetch(LICENCE_CSV_URL, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
+export async function readLicenceCsvText() {
+  // no-store controls Next.js; a unique URL also avoids reusing an intermediary's CSV response.
+  const url = new URL(LICENCE_CSV_URL);
+  url.searchParams.set('_em_refresh', String(Date.now()));
+  const response = await fetch(url.toString(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }, signal: AbortSignal.timeout(12000) });
   if (!response.ok) throw new Error('The licence sheet could not be checked. Please try again.');
   const text = await response.text();
   if (text.length > 5_000_000) throw new Error('The licence sheet is too large.');
-  return checkCsvLicence(text, key, email);
+  return text;
+}
+
+export async function readCsvLicence(key: string, email: string) {
+  return checkCsvLicence(await readLicenceCsvText(), key, email);
 }

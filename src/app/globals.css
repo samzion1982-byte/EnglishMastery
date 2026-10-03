@@ -4828,3 +4828,8 @@ html[data-theme-mode='light'] .admin-shell .report-date-grid input[type='date'] 
 .admin-shell .individual-learner-actions button { margin: 0; width: 100%; min-height: 44px; padding: 10px 6px; }
 .individual-learner-password { margin: 0; overflow-wrap: anywhere; }
 @media (max-width: 540px) { .individual-learner-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.licence-editor { align-items: start; }
+.licence-editor > label { display: flex; flex-direction: column; align-self: start; gap: 6px; }
+.licence-editor > label > input:not([type="checkbox"]) { height: 50px; min-width: 0; width: 100%; box-sizing: border-box; flex: none; }
+.licence-editor > label > small { font-size: 12px; line-height: 1.5; }

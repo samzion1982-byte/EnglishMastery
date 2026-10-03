@@ -231,6 +231,7 @@ export function PermissionsManager() {
                     return (
                       <th key={column.value} className={tone} title={title || undefined}>
                         <span className="perm-bar" />
+                        {column.hint ? <span className="perm-hint">{column.hint}</span> : null}
                         {assigned.length ? (
                           <span className="perm-names">
                             {assigned.map((person) => (
@@ -240,7 +241,7 @@ export function PermissionsManager() {
                               </span>
                             ))}
                           </span>
-                        ) : column.hint ? <span className="perm-hint">{column.hint}</span> : null}
+                        ) : null}
                         <strong>{column.label}</strong>
                         <span className="perm-bulk">
                           <button type="button" className="perm-mini on" onClick={() => setRoleAll(column.value, true)}>All</button>
