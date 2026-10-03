@@ -12,17 +12,17 @@ export const ROLE_LABELS: Record<string, string> = {
 
 export const ASSIGNABLE_ROLES = ['admin1', 'user4', 'demo', 'user', 'admin', 'student'] as const;
 export const ADMIN_STAFF_ROLES = ['super_admin', 'admin1', 'admin', 'user', 'demo', 'user4'] as const;
-export const SUPER_ONLY_PAGES = ['users', 'permissions', 'licences', 'logs'] as const;
+export const SUPER_ONLY_PAGES = ['permissions', 'licences'] as const;
 
 export const ADMIN_PAGES = [
   { key: 'core-vocabulary', label: 'Core Vocabulary', path: '/admin', alwaysOn: true, superOnly: false, principalOnly: false, section: 'content' },
   { key: 'appendix', label: 'Appendix', path: '/admin/appendix', alwaysOn: false, superOnly: false, principalOnly: false, section: 'content' },
-  { key: 'users', label: 'Staff', path: '/admin/users', alwaysOn: false, superOnly: true, principalOnly: false, section: 'access' },
-  { key: 'school-staff', label: 'Staff', path: '/admin/staff', alwaysOn: false, superOnly: false, principalOnly: true, section: 'access' },
-  { key: 'permissions', label: 'Permissions', path: '/admin/permissions', alwaysOn: false, superOnly: true, principalOnly: false, section: 'access' },
+  { key: 'users', label: 'Staff', path: '/admin/users', alwaysOn: false, superOnly: false, principalOnly: false, section: 'access' },
+  { key: 'permissions', label: 'Permissions', path: '/admin/permissions', alwaysOn: false, superOnly: true, principalOnly: false, section: 'distribution' },
   { key: 'licences', label: 'Licences', path: '/admin/licences', alwaysOn: false, superOnly: true, principalOnly: false, section: 'distribution' },
+  { key: 'settings', label: 'Settings', path: '/admin/settings', alwaysOn: false, superOnly: false, principalOnly: false, section: 'settings' },
   { key: 'reports', label: 'Reports', path: '/admin/reports', alwaysOn: false, superOnly: false, principalOnly: false, section: 'reports' },
-  { key: 'logs', label: 'Speech recognition', path: '/admin/logs', alwaysOn: false, superOnly: true, principalOnly: false, section: 'logs' },
+  { key: 'logs', label: 'Speech recognition', path: '/admin/logs', alwaysOn: false, superOnly: false, principalOnly: false, section: 'logs' },
 ] as const;
 
 export const STUDENT_DEFAULT_PASSWORD = '123456';
@@ -64,6 +64,7 @@ export function canOpenReports(role: string | null | undefined, designation?: st
 }
 
 export function canOpenAdminPage(role: string | null | undefined, pageKey: string, grants: Record<string, boolean>, designation?: string | null) {
+  if (pageKey === 'school-staff') pageKey = 'users';
   const page = ADMIN_PAGES.find((p) => p.key === pageKey);
   if (page?.principalOnly) return designation === 'principal';
   if (page?.key === 'reports') {

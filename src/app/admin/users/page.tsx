@@ -14,5 +14,6 @@ export default async function UsersPage() {
     isSchoolStaff(role) ? readSchoolPost(supabase) : null,
   ]);
   if (!canOpenAdminPage(role, 'users', grants, post?.designation)) redirect(isSchoolStaff(role) ? '/admin/overview' : '/admin');
+  if (isSchoolStaff(role)) redirect('/admin/staff');
   return <UsersManager />;
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { isSuperAdmin } from '@/lib/access';
+import { canOpenAdminPage } from '@/lib/access';
+import { loadRoleGrants } from '@/lib/grants';
 import { buildSpeechWorkbook } from '@/lib/excel-speech';
 import { mapSpeechRow, summarizeSpeechUsage, type SpeechUsageRow } from '@/lib/speech-usage';
 import { SPEAK_MODEL } from '@/lib/speaking-transcribe';
@@ -25,8 +26,9 @@ async function loadRows() {
 
 export async function GET(request: Request) {
   const { user, role, active } = await getSessionRole();
-  if (!user || !active || !isSuperAdmin(role)) {
-    return NextResponse.json({ error: 'Super Admin required' }, { status: 403, headers: noStore });
+  const grants = user && active ? await loadRoleGrants(await createServerSupabase(), role || '') : {};
+  if (!user || !active || !canOpenAdminPage(role, 'logs', grants)) {
+    return NextResponse.json({ error: 'Logs permission required' }, { status: 403, headers: noStore });
   }
   const url = new URL(request.url);
   const tz = Number(url.searchParams.get('tz'));

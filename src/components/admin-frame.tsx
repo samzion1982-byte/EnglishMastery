@@ -5,7 +5,7 @@ import { useDialog } from './use-dialog';
 import { IndividualValidity } from './individual-validity';
 import Link, { useLinkStatus } from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ADMIN_PAGES, canOpenAdminPage, isFullAccess, isSchoolStaff, isSuperAdmin, ROLE_LABELS } from '@/lib/access';
+import { ADMIN_PAGES, canOpenAdminPage, isSchoolStaff, isSuperAdmin, ROLE_LABELS } from '@/lib/access';
 import { Icon } from './icon';
 import { SignOutButton } from './sign-out-button';
 
@@ -61,10 +61,10 @@ export function AdminFrame({
     desktop.addEventListener('change', resize);
     return () => desktop.removeEventListener('change', resize);
   }, []);
-  const items = ADMIN_PAGES.filter((page) => canOpenAdminPage(role, page.key, grants, designation));
+  const items = ADMIN_PAGES.filter((page) => canOpenAdminPage(role, page.key, grants, designation)).map((page) => ({ ...page, path: page.key === 'users' && isSchoolStaff(role) ? '/admin/staff' : page.path }));
+  const settingsAllowed = canOpenAdminPage(role, 'settings', grants, designation);
   const content = items.filter((p) => p.section === 'content');
-  const access = items.filter((p) => p.section === 'access' && p.key !== 'permissions');
-  const permissions = items.filter((p) => p.key === 'permissions');
+  const access = items.filter((p) => p.section === 'access');
   const distribution = items.filter((p) => p.section === 'distribution');
   const reports = items.filter((p) => p.section === 'reports');
   const logs = items.filter((p) => p.section === 'logs');
@@ -115,12 +115,11 @@ export function AdminFrame({
         </div>
         <nav>
           <SideLink href="/" current={false} onNavigate={() => setOpen(false)} icon="home" label="Student Hub" />
-          {(isFullAccess(role) || distribution.length > 0 || logs.length > 0 || permissions.length > 0) && (
+          {(settingsAllowed || distribution.length > 0 || logs.length > 0) && (
             <details className="admin-nav-group admin-nav-fold" open>
               <summary>Admin</summary>
               <div className="admin-nav-items">
-              {isFullAccess(role) && <SideLink href="/admin/settings" current={path === '/admin/settings'} onNavigate={() => setOpen(false)} icon="settings" label="Settings" />}
-              {nav(permissions)}
+              {settingsAllowed && <SideLink href="/admin/settings" current={path === '/admin/settings'} onNavigate={() => setOpen(false)} icon="settings" label="Settings" />}
               {nav(distribution)}
               {nav(logs)}
               </div>

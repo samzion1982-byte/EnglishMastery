@@ -1,13 +1,16 @@
 import { TrustGateSettings } from '@/components/trustgate-settings';
 import { AdminThemeSettings } from '@/components/admin-theme-settings';
+import { loadRoleGrants } from '@/lib/grants';
+import { createServerSupabase } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import { TranslationControls } from '@/components/translation-controls';
-import { isFullAccess } from '@/lib/access';
+import { canOpenAdminPage } from '@/lib/access';
 import { getAdminSessionRole as getSessionRole } from '@/lib/admin-session';
 
 export default async function Settings() {
   const { role } = await getSessionRole();
-  if (!isFullAccess(role)) redirect('/admin/overview');
+  const grants = await loadRoleGrants(await createServerSupabase(), role || '');
+  if (!canOpenAdminPage(role, 'settings', grants)) redirect('/admin/overview');
   return (
     <div className="admin-workspace">
       <header className="workspace-heading">

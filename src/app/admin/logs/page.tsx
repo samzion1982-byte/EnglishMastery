@@ -1,10 +1,13 @@
+import { loadRoleGrants } from '@/lib/grants';
+import { createServerSupabase } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
-import { isSuperAdmin } from '@/lib/access';
+import { canOpenAdminPage } from '@/lib/access';
 import { getAdminSessionRole as getSessionRole } from '@/lib/admin-session';
 import { SpeechLog } from './speech-log';
 
 export default async function LogsPage() {
   const { role } = await getSessionRole();
-  if (!isSuperAdmin(role)) redirect('/admin/overview');
+  const grants = await loadRoleGrants(await createServerSupabase(), role || '');
+  if (!canOpenAdminPage(role, 'logs', grants)) redirect('/admin/overview');
   return <SpeechLog />;
 }
