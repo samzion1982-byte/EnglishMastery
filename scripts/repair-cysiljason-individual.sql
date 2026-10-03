@@ -1,0 +1,3 @@
+-- WITHDRAWN: purchaser accounts must retain their existing role.
+-- No SQL changes are performed by this file.
+-- To reset old purchases use scripts/reset-individual-purchases.sql.
