@@ -10,6 +10,6 @@ export async function GET() {
   if (context.error) return reply({ error: 'CSV validity unavailable.' }, 503);
   if (!context.data) return reply({ individual: false });
   if (!context.data.key) return reply({ individual: true, error: 'Validate your CSV licence first.' }, 403);
-  try { const licence = await readCsvLicence(context.data.key, user.email); return reply({ individual: true, valid_until: licence.validUntil }); }
+  try { const licence = await readCsvLicence(context.data.key, context.data.purchaser_email); return reply({ individual: true, valid_until: licence.validUntil }); }
   catch { return reply({ individual: true, error: 'CSV validity unavailable.' }, 503); }
 }

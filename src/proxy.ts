@@ -86,7 +86,8 @@ export async function proxy(request: NextRequest) {
       try {
         const context = await supabase.rpc('my_csv_licence_context');
         if (context.error || !context.data?.key || !user.email) throw new Error('Licence missing');
-        await readCsvLicence(context.data.key, user.email);
+        if (context.data.login_email?.toLowerCase() !== user.email.toLowerCase()) throw new Error('Login mapping mismatch');
+        await readCsvLicence(context.data.key, context.data.purchaser_email);
       } catch { sheetRejected = true; }
     }
     if (sheetRejected || (role === 'student' && (gate.error || !body)) || (body?.ok === false && (role === 'student' || body.kind === 'individual'))) {

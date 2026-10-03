@@ -20,6 +20,8 @@ type Licence = {
   kind: Kind;
   name: string;
   contact_email: string | null;
+  login_email: string | null;
+  licence_key: string | null;
   csv_validity_error?: string;
   address: string | null;
   phone: string | null;
@@ -37,6 +39,8 @@ type Licence = {
 type Draft = {
   name: string;
   email: string;
+  loginEmail: string;
+  authCode: string;
   address: string;
   phone: string;
   seats: string;
@@ -65,6 +69,8 @@ function emptyDraft(kind: Kind): Draft {
   return {
     name: '',
     email: '',
+    loginEmail: '',
+    authCode: '',
     address: '',
     phone: '',
     seats: COPY[kind].seats,
@@ -83,6 +89,8 @@ function draftFrom(row: Licence): Draft {
   return {
     name: row.name,
     email: row.contact_email || '',
+    loginEmail: row.login_email || row.contact_email || '',
+    authCode: row.licence_key || '',
     address: row.address || '',
     phone: row.phone || '',
     seats: String(row.seats),
@@ -151,9 +159,9 @@ export function LicencesManager() {
     setLoading(true);
     setLoadError('');
     const page = <T,>(query: unknown) => query as PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-    const wide = 'device_limit, id, kind, name, contact_email, address, phone, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
-    const wideNoContact = 'device_limit, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
-    const narrow = 'device_limit, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy';
+    const wide = 'login_email, licence_key, device_limit, id, kind, name, contact_email, address, phone, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
+    const wideNoContact = 'login_email, licence_key, device_limit, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
+    const narrow = 'login_email, licence_key, device_limit, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy';
     let result = await fetchAll<Licence>((from, to) => page(supabase.from('em_licences').select(wide).order('name').order('id').range(from, to)));
     if (result.error && /address|phone/i.test(result.error.message)) {
       setContactFields(false);
@@ -170,7 +178,7 @@ export function LicencesManager() {
     if (result.error) {
       const missingTable = /em_licences/i.test(result.error.message) && !/school_code/i.test(result.error.message);
       const missingRoster = /school_code|em_roster|schema cache|does not exist/i.test(result.error.message);
-      setLoadError(/device_limit/i.test(result.error.message) ? 'Run supabase/migrations/20261003180000_individual_device_limits.sql, then retry.' : /licence_key/i.test(result.error.message) ? 'Run supabase/migrations/20261003120000_individual_accounts.sql, then retry.' : missingTable
+      setLoadError(/login_email/i.test(result.error.message) ? 'Run supabase/migrations/20261003190000_admin_assigned_purchases.sql, then retry.' : /device_limit/i.test(result.error.message) ? 'Run supabase/migrations/20261003180000_individual_device_limits.sql, then retry.' : /licence_key/i.test(result.error.message) ? 'Run supabase/migrations/20261003120000_individual_accounts.sql, then retry.' : missingTable
         ? 'Run supabase/migrations/20260926130000_licences.sql in the Supabase SQL editor, then retry.'
         : missingRoster
           ? 'Run supabase/migrations/20260926140000_school_roster.sql in the Supabase SQL editor, then retry.'
@@ -187,8 +195,8 @@ export function LicencesManager() {
       setRows(result.data.map((row) => ({
         ...row,
         valid_from: String(row.valid_from).slice(0, 10),
-        valid_until: row.kind === 'individual' ? dates[(row.contact_email || '').trim().toLowerCase()]?.date || null : row.valid_until ? String(row.valid_until).slice(0, 10) : null,
-        csv_validity_error: row.kind === 'individual' ? issue || dates[(row.contact_email || '').trim().toLowerCase()]?.error || (!dates[(row.contact_email || '').trim().toLowerCase()] ? 'Email not assigned in CSV' : undefined) : undefined,
+        valid_until: row.kind === 'individual' ? dates[(row.licence_key || '').trim().toUpperCase()]?.date || null : row.valid_until ? String(row.valid_until).slice(0, 10) : null,
+        csv_validity_error: row.kind === 'individual' ? issue || dates[(row.licence_key || '').trim().toUpperCase()]?.error || (!dates[(row.licence_key || '').trim().toUpperCase()] ? 'Auth Code not assigned in CSV' : undefined) : undefined,
         academic_year: row.academic_year || null,
         address: row.address || null,
         phone: row.phone || null,
@@ -394,7 +402,13 @@ export function LicencesManager() {
     setFormError('');
     setNotice('');
     try {
-      if (form?.mode === 'edit') {
+      if (kind === 'individual') {
+        const response = await fetch('/api/admin/individual-purchases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ details: { ...payload, id: form?.mode === 'edit' ? form.id : undefined, login_email: draft.loginEmail.trim().toLowerCase() || email, auth_code: draft.authCode.trim() }, role: accountRole }) });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not save purchase.');
+        setNotice(result.existingUser ? `${name} purchase saved. Existing login password and access level are retained.` : `${name} purchase and login created. First password: 123456.`, 'success');
+        finishClose();
+      } else if (form?.mode === 'edit') {
         const { data, error } = await supabase.from('em_licences').update(payload).eq('id', form.id).select('id, name, school_code').maybeSingle();
         if (error) throw error;
         if (!data || (kind === 'school' && (data.school_code || '').toUpperCase() !== (schoolCode || '').toUpperCase())) {
@@ -404,11 +418,9 @@ export function LicencesManager() {
         setNotice(`${name} saved.`, 'success');
         finishClose();
       } else {
-        const { error } = kind === 'individual'
-          ? await supabase.rpc('create_individual_account', { p_details: payload, p_role: accountRole })
-          : await supabase.from('em_licences').insert({ ...payload, kind });
+        const { error } = await supabase.from('em_licences').insert({ ...payload, kind });
         if (error) throw error;
-        setNotice(kind === 'individual' ? `${name} licence saved and user access prepared. First password: 123456. Assign and share its prefilled AUTH CODE from the Google sheet.` : `${name} added.`, 'success');
+        setNotice(`${name} added.`, 'success');
         setDraft(emptyDraft(kind));
         finishClose();
       }
@@ -635,9 +647,13 @@ export function LicencesManager() {
               </label>
             ) : null}
             <label>
-              {kind === 'school' ? 'Email id' : 'Contact email'}
+              {kind === 'school' ? 'Email id' : 'Purchaser email (CSV)'}
               <input type="email" autoComplete="email" required={kind === 'individual'} value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
             </label>
+            {kind === 'individual' && <>
+              <label>Login / student email<input type="email" value={draft.loginEmail} placeholder="Leave empty to use purchaser email" onChange={(event) => setDraft({ ...draft, loginEmail: event.target.value })} /><small>Use the purchaser email or a different learner email. Existing logins keep their password and role.</small></label>
+              <label className="span-2">Auth Code (from CSV)<input required autoComplete="off" value={draft.authCode} onChange={(event) => setDraft({ ...draft, authCode: event.target.value })} placeholder="Paste the tracker licence key" /></label>
+            </>}
             {kind === 'individual' && form.mode === 'create' && (<label>Access level<select value={accountRole} onChange={(event) => setAccountRole(event.target.value)}>{ASSIGNABLE_ROLES.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>)}
             {kind === 'school' && yearField && (
               <label className="span-2">
@@ -678,20 +694,10 @@ export function LicencesManager() {
             </div>
             {formError ? <p className="notice error span-2" role="alert">{formError}</p> : null}
           </form>
-          <p className="meta licence-hint">{kind === 'school' ? 'The student count comes from the tracker. Leave the end date empty when the licence has no fixed end.' : 'New accounts start with 123456 and must change it. Share the assigned Google sheet AUTH CODE. TrustGate follows the Super Admin setting.'}</p>
+          <p className="meta licence-hint">{kind === 'school' ? 'The student count comes from the tracker. Leave the end date empty when the licence has no fixed end.' : 'Assign the CSV Auth Code here. New logins start with 123456 and must change it; existing logins retain their credentials and role. Users are not asked to enter the key.'}</p>
           {form.mode === 'edit' && kind === 'individual' && (
-            <form className="licence-editor" onSubmit={(event) => void addLearner(event)}>
-              <p className="meta span-2">Assign a prefilled AUTH CODE in EM_Licenses to this learner email and set Validation Status to Active. Share that sheet key with the learner; generated local keys are no longer used.</p>
-              <p className="meta span-2">Super Admin can view saved individual passwords. Reset password sets 123456 and requires a change.</p>
-              <label><input type="checkbox" checked={createLearner} onChange={(event) => setCreateLearner(event.target.checked)} />Create a new user account</label>
-              {createLearner && <label>Access level<select value={accountRole} onChange={(event) => setAccountRole(event.target.value)}>{ASSIGNABLE_ROLES.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>}
-              <label className="span-2">
-                Learner email
-                <input type="email" value={learnerEmail} onChange={(event) => setLearnerEmail(event.target.value)} placeholder="student@example.com" />
-              </label>
-              <div className="licence-actions span-2">
-                <button type="submit" disabled={busy}>Add learner</button>
-              </div>
+            <div className="licence-editor">
+              <p className="meta span-2">The purchaser email and Auth Code are checked against the CSV. The mapped login uses its own credentials.</p>
               {learners.length > 0 && (
                 <ul className="meta span-2 individual-learner-list">
                   {learners.map((learner) => (
@@ -708,7 +714,7 @@ export function LicencesManager() {
                   ))}
                 </ul>
               )}
-            </form>
+            </div>
           )}
           {form.mode === 'edit' && events.length > 0 && (
             <ul className="meta">

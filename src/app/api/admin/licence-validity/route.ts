@@ -10,12 +10,12 @@ export async function GET() {
     if (!response.ok) throw new Error('Could not read licence validity from the CSV.');
     const rows = parseLicenceCsv(await response.text());
     const headers = rows.shift()?.map(value => value.trim().toLowerCase()) || [];
-    for (const header of ['email', 'validity upto']) if (headers.filter(value => value === header).length !== 1) throw new Error('The CSV needs Email and Validity Upto columns.');
+    for (const header of ['auth code', 'email', 'validity upto']) if (headers.filter(value => value === header).length !== 1) throw new Error('The CSV needs AUTH CODE, Email and Validity Upto columns.');
     const dates: Record<string, { date: string | null; error?: string }> = {};
     for (const row of rows) {
-      const email = (row[headers.indexOf('email')] || '').trim().toLowerCase();
+      const email = (row[headers.indexOf('auth code')] || '').trim().toUpperCase();
       if (!email) continue;
-      if (dates[email]) { dates[email] = { date: null, error: 'Multiple CSV rows use this email.' }; continue; }
+      if (dates[email]) { dates[email] = { date: null, error: 'Multiple CSV rows use this Auth Code.' }; continue; }
       try { dates[email] = { date: licenceExpiry(row[headers.indexOf('validity upto')] || '') }; }
       catch { dates[email] = { date: null, error: 'Invalid CSV validity date.' }; }
     }

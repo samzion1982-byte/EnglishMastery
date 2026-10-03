@@ -16,9 +16,10 @@ export async function POST(request: Request) {
     const context = await client.rpc('my_csv_licence_context');
     if (context.error) throw new Error('Apply the Google CSV licence migration first.');
     if (!context.data) throw new Error('This account has no individual licence.');
-    const key = body.key?.trim() || context.data.key;
-    if (!key) return reply({ needsKey: true });
-    const verified = await readCsvLicence(key, user.email);
+    if (context.data.login_email?.toLowerCase() !== user.email.toLowerCase()) throw new Error('The assigned login email does not match this account.');
+    const key = context.data.key;
+    if (!key) throw new Error('Ask Super Admin to assign your Auth Code in Licences.');
+    const verified = await readCsvLicence(key, context.data.purchaser_email);
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (!serviceKey || !url) throw new Error('The server licence connection needs SUPABASE_SERVICE_ROLE_KEY.');

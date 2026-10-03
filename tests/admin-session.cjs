@@ -22,7 +22,7 @@ const proxy = load('src/proxy.ts', {
   '@/lib/access': access,
   'next/server': { NextResponse: { next: options => response(options), redirect: url => response({ redirect: url.pathname }) } },
   '@supabase/ssr': { createServerClient: (url, key, options) => ({
-    rpc: async (name) => name === 'my_csv_licence_context' ? { data: { key: 'K1' }, error: null } : gateResult,
+    rpc: async (name) => name === 'my_csv_licence_context' ? { data: { key: 'K1', purchaser_email: 'parent@example.com', login_email: 'user@example.com' }, error: null } : gateResult,
     auth: { getUser: async () => { authCalls++; options.cookies.setAll([{ name: 'refresh', value: 'updated', options: {} }]); return { data: { user } }; }, signOut: async () => {} },
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => { profileCalls++; return { data: profile }; } }) }) }),
   }) },
