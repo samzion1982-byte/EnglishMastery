@@ -24,6 +24,7 @@ type Licence = {
   address: string | null;
   phone: string | null;
   seats: number;
+  device_limit: number;
   valid_from: string;
   valid_until: string | null;
   status: Status;
@@ -39,6 +40,7 @@ type Draft = {
   address: string;
   phone: string;
   seats: string;
+  deviceLimit: string;
   schoolCode: string;
   valid_from: string;
   valid_until: string;
@@ -66,6 +68,7 @@ function emptyDraft(kind: Kind): Draft {
     address: '',
     phone: '',
     seats: COPY[kind].seats,
+    deviceLimit: '1',
     schoolCode: '',
     valid_from: indiaToday(),
     valid_until: '',
@@ -83,6 +86,7 @@ function draftFrom(row: Licence): Draft {
     address: row.address || '',
     phone: row.phone || '',
     seats: String(row.seats),
+    deviceLimit: String(row.device_limit || 1),
     schoolCode: row.school_code || '',
     valid_from: row.valid_from,
     valid_until: row.valid_until || '',
@@ -121,7 +125,7 @@ export function LicencesManager() {
   const [draft, setDraft] = useState<Draft>(() => emptyDraft('school'));
   const [form, setForm] = useState<FormMode | null>(null);
   const [query, setQuery] = useState('');
-  const [notice, setNotice, noticeTone] = useNotice('A school\'s student count comes from its tracker. Individuals still have a seat count you set here.');
+  const [notice, setNotice, noticeTone] = useNotice('A school\'s student count comes from its tracker. Individuals have a configurable number of allowed devices.');
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -147,9 +151,9 @@ export function LicencesManager() {
     setLoading(true);
     setLoadError('');
     const page = <T,>(query: unknown) => query as PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-    const wide = 'id, kind, name, contact_email, address, phone, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
-    const wideNoContact = 'id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
-    const narrow = 'id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy';
+    const wide = 'device_limit, id, kind, name, contact_email, address, phone, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
+    const wideNoContact = 'device_limit, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
+    const narrow = 'device_limit, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy';
     let result = await fetchAll<Licence>((from, to) => page(supabase.from('em_licences').select(wide).order('name').order('id').range(from, to)));
     if (result.error && /address|phone/i.test(result.error.message)) {
       setContactFields(false);
@@ -166,7 +170,7 @@ export function LicencesManager() {
     if (result.error) {
       const missingTable = /em_licences/i.test(result.error.message) && !/school_code/i.test(result.error.message);
       const missingRoster = /school_code|em_roster|schema cache|does not exist/i.test(result.error.message);
-      setLoadError(/licence_key/i.test(result.error.message) ? 'Run supabase/migrations/20261003120000_individual_accounts.sql, then retry.' : missingTable
+      setLoadError(/device_limit/i.test(result.error.message) ? 'Run supabase/migrations/20261003180000_individual_device_limits.sql, then retry.' : /licence_key/i.test(result.error.message) ? 'Run supabase/migrations/20261003120000_individual_accounts.sql, then retry.' : missingTable
         ? 'Run supabase/migrations/20260926130000_licences.sql in the Supabase SQL editor, then retry.'
         : missingRoster
           ? 'Run supabase/migrations/20260926140000_school_roster.sql in the Supabase SQL editor, then retry.'
@@ -307,7 +311,6 @@ export function LicencesManager() {
   const schools = rows.filter((row) => row.kind === 'school');
   const individuals = rows.filter((row) => row.kind === 'individual');
   const schoolSeats = schools.filter((row) => inForce(row, today)).reduce((sum, row) => sum + row.seats, 0);
-  const individualSeats = individuals.filter((row) => inForce(row, today)).reduce((sum, row) => sum + row.seats, 0);
 
   function readDraft() {
     const name = draft.name.trim();
@@ -338,8 +341,9 @@ export function LicencesManager() {
         },
       };
     }
-    const seats = Number(draft.seats);
-    if (!Number.isInteger(seats) || seats < 1 || seats > 20000) return { error: 'Seats must be a whole number from 1 to 20000.' };
+    const devices = Number(draft.deviceLimit);
+    if (!Number.isInteger(devices) || devices < 1 || devices > 10) return { error: 'Number of devices must be a whole number from 1 to 10.' };
+    const seats = editing?.seats || 1;
     return { value: { name, email, address: '', phone: '', schoolCode: null as string | null, seats, academicYear } };
   }
 
@@ -364,6 +368,7 @@ export function LicencesManager() {
       school_code: string | null;
       second_device_policy: Policy;
       seats?: number;
+      device_limit?: number;
       academic_year?: string | null;
     } = {
       name,
@@ -375,7 +380,7 @@ export function LicencesManager() {
       school_code: schoolCode,
       second_device_policy: draft.policy,
     };
-    if (kind === 'individual') { payload.seats = seats; delete (payload as { valid_until?: string | null }).valid_until; }
+    if (kind === 'individual') { payload.seats = seats; payload.device_limit = Number(draft.deviceLimit); delete (payload as { valid_until?: string | null }).valid_until; }
     else if (form?.mode === 'create') payload.seats = 0;
     if (yearField && kind === 'school') payload.academic_year = academicYear;
     if (contactFields && kind === 'school') {
@@ -403,14 +408,14 @@ export function LicencesManager() {
           ? await supabase.rpc('create_individual_account', { p_details: payload, p_role: accountRole })
           : await supabase.from('em_licences').insert({ ...payload, kind });
         if (error) throw error;
-        setNotice(kind === 'individual' ? `${name} and user account created. First password: 123456. Assign and share its prefilled AUTH CODE from the Google sheet.` : `${name} added.`, 'success');
+        setNotice(kind === 'individual' ? `${name} licence saved and user access prepared. First password: 123456. Assign and share its prefilled AUTH CODE from the Google sheet.` : `${name} added.`, 'success');
         setDraft(emptyDraft(kind));
         finishClose();
       }
       await load();
     } catch (err) {
       const text = errorText(err, 'Could not save the licence.');
-      setFormError(/create_individual_account|provision_individual_learner|reset_individual_access|licence_key/i.test(text)
+      setFormError(/device_limit/i.test(text) ? 'Run supabase/migrations/20261003180000_individual_device_limits.sql, then retry.' : /create_individual_account|provision_individual_learner|reset_individual_access|licence_key/i.test(text)
         ? 'Run supabase/migrations/20261003120000_individual_accounts.sql, then retry.'
         : /duplicate|school_code/i.test(text)
         ? 'That school id is already in use.'
@@ -434,7 +439,7 @@ export function LicencesManager() {
       setDeleteError('');
       return;
     }
-    if (!window.confirm(`Delete ${row.name}?`)) return;
+    if (!window.confirm(`Delete the licence for ${row.name}? The login and learning history are retained. Recreating an individual with the same email restores access with password 123456.`)) return;
     setBusy(true);
     try {
       const removed = await supabase.from('em_licences').delete().eq('id', row.id).select('id');
@@ -442,7 +447,7 @@ export function LicencesManager() {
       if (!removed.data?.length) throw new Error('The licence was not deleted.');
       setRows((all) => all.filter((item) => item.id !== row.id));
       setForm(null);
-      setNotice(`${row.name} deleted.`, 'success');
+      setNotice(`${row.name} licence deleted. The unassigned login is retained for recreation.`, 'success');
     } catch (err) {
       setNotice(errorText(err, 'Not deleted.'), 'error');
     } finally {
@@ -473,7 +478,7 @@ export function LicencesManager() {
       setForm(null);
       setDeleteSchool(null);
       setMasterPassword('');
-      setNotice(`${row.name} deleted.`, 'success');
+      setNotice(`${row.name} licence deleted. The unassigned login is retained for recreation.`, 'success');
     } catch (err) {
       setDeleteError(errorText(err, 'Not deleted.'));
     } finally {
@@ -580,8 +585,8 @@ export function LicencesManager() {
           <strong>{loading ? '—' : individuals.length}</strong>
         </article>
         <article className="admin-card">
-          <span>Individual seats in force</span>
-          <strong>{loading ? '—' : individualSeats}</strong>
+          <span>Active individuals</span>
+          <strong>{loading ? '—' : individuals.filter((row) => inForce(row, today)).length}</strong>
         </article>
       </div>
 
@@ -612,8 +617,9 @@ export function LicencesManager() {
               </label>
             ) : (
               <label>
-                Seats
-                <input required inputMode="numeric" value={draft.seats} onChange={(event) => setDraft({ ...draft, seats: event.target.value })} />
+                Number of devices
+                <input required type="number" min={1} max={10} inputMode="numeric" value={draft.deviceLimit} onChange={(event) => setDraft({ ...draft, deviceLimit: event.target.value })} />
+                <small>Allowed computers per individual when TrustGate is enabled.</small>
               </label>
             )}
             {kind === 'school' ? (
@@ -694,7 +700,7 @@ export function LicencesManager() {
                       <div className="individual-learner-actions" role="group" aria-label={`Actions for ${learner.name || learner.email}`}>
                         <button type="button" className="quiet" disabled={busy} onClick={() => void viewPassword(learner.id)}>{visiblePasswords[learner.id] ? 'Hide password' : 'View password'}</button>
                         <button type="button" className="quiet" disabled={busy} onClick={() => void resetIndividual(learner.id, false)}>Reset password</button>
-                        <button type="button" className="quiet" disabled={busy} onClick={() => void resetIndividual(learner.id, true)}>Reset device</button>
+                        <button type="button" className="quiet" disabled={busy} onClick={() => void resetIndividual(learner.id, true)}>Reset devices</button>
                         <button type="button" className="quiet danger" disabled={busy} onClick={() => void removeLearner(learner.id)}>Remove</button>
                       </div>
                       {visiblePasswords[learner.id] && <p className="individual-learner-password">Password: {visiblePasswords[learner.id]}</p>}
@@ -759,7 +765,7 @@ export function LicencesManager() {
             <tr>
               {kind === 'school' && <th>School id</th>}
               <th>{copy.name}</th>
-              <th>{kind === 'school' ? 'Students' : 'Seats'}</th>
+              <th>{kind === 'school' ? 'Students' : 'Devices'}</th>
               <th>Valid until</th>
               <th>Standing</th>
               <th></th>
@@ -784,7 +790,7 @@ export function LicencesManager() {
                       <button type="button" className="row-link" onClick={() => openEdit(row)}>{row.name}</button>
                     )}
                   </td>
-                  <td>{row.seats}</td>
+                  <td>{kind === 'individual' ? row.device_limit : row.seats}</td>
                   <td>{row.kind === 'individual' && row.csv_validity_error ? row.csv_validity_error : showDate(row.valid_until)}</td>
                   <td><span className={state.className}>{state.label}</span>{kind === 'individual' && <small className="licence-validity">Licence Valid upto : {row.valid_until ? showDate(row.valid_until) : 'Unavailable'}</small>}</td>
                   <td>
