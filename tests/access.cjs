@@ -33,3 +33,10 @@ for (const page of ['users', 'logs', 'settings']) {
   assert.equal(canOpenAdminPage('user4', page, { [page]: true }), true);
   assert.equal(canOpenAdminPage('user4', page, { [page]: false }), false);
 }
+
+for (const role of ['admin1', 'user4', 'demo', 'user', 'admin']) {
+  assert.equal(canOpenAdminPage(role, 'reports', {}), true);
+  assert.equal(canOpenAdminPage(role, 'reports', { reports: true }), true);
+  assert.equal(canOpenAdminPage(role, 'reports', { reports: false }), false);
+}
+assert.equal(canOpenAdminPage('student', 'reports', { reports: true }), false);

@@ -32,10 +32,10 @@ const COLUMNS = [
 const SECTIONS = [
   { key: 'content', label: 'Learning content' },
   { key: 'access', label: 'People & access' },
-  { key: 'distribution', label: 'Distribution' },
   { key: 'reports', label: 'Reports' },
   { key: 'logs', label: 'Logs' },
   { key: 'settings', label: 'Settings' },
+  { key: 'distribution', label: 'Distribution' },
 ];
 const TREE: CategoryNode[] = SECTIONS.map((section) => ({
   ...section,
@@ -53,7 +53,7 @@ const PAGES = TREE.flatMap((category) => category.children);
 function defaultOn(role: string, pageKey: string) {
   if (PAGES.find((page) => page.key === pageKey)?.restriction) return false;
   if (role === 'admin1') return true;
-  return pageKey === 'core-vocabulary';
+  return pageKey === 'core-vocabulary' || pageKey === 'reports';
 }
 
 function defaultMatrix() {

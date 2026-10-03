@@ -59,7 +59,7 @@ export function permissionRole(role: string | null | undefined, designation?: st
 }
 
 export function canOpenReports(role: string | null | undefined, designation?: string | null) {
-  if (isFullAccess(role)) return true;
+  if (isAdminStaff(role)) return true;
   return designation === 'principal' || designation === 'hod' || designation === 'teacher' || designation === 'tutor';
 }
 
