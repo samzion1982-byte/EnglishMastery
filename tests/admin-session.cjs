@@ -14,11 +14,13 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.invalid';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test';
 let user = { id: 'real-user' }, profile = { role: 'super_admin', nickname: 'Admin', is_active: true }, authCalls = 0, profileCalls = 0, fallbackCalls = 0;
 let forwarded;
+let gateResult = { data: { ok: false, reason: 'none' }, error: null };
 const response = (options = {}) => ({ ...options, cookies: { values: [], set(item, value) { this.values.push(typeof item === 'string' ? { name: item, value } : item); }, getAll() { return this.values; } } });
 const proxy = load('src/proxy.ts', {
   '@/lib/access': access,
   'next/server': { NextResponse: { next: options => response(options), redirect: url => response({ redirect: url.pathname }) } },
   '@supabase/ssr': { createServerClient: (url, key, options) => ({
+    rpc: async () => gateResult,
     auth: { getUser: async () => { authCalls++; options.cookies.setAll([{ name: 'refresh', value: 'updated', options: {} }]); return { data: { user } }; }, signOut: async () => {} },
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => { profileCalls++; return { data: profile }; } }) }) }),
   }) },
@@ -48,6 +50,16 @@ function request() {
   result = await proxy(request());
   assert.equal(result.request.headers.get('x-em-admin-session'), null);
   forwarded = new Headers(); await session(); assert.equal(fallbackCalls, 1);
+  profile = { role: 'super_admin', is_active: true };
+  gateResult = { data: { ok: false, kind: 'individual', reason: 'activation' }, error: null };
+  assert.equal((await proxy(request())).redirect, '/login', 'Individual staff cannot bypass key/device activation via admin routes');
+  gateResult = { data: { ok: false, kind: 'individual', reason: 'closed' }, error: null };
+  assert.equal((await proxy(request())).redirect, '/login', 'Expired individual staff licence is rejected');
+  profile = { role: 'student', is_active: true };
+  gateResult = { data: null, error: { message: 'unavailable' } };
+  assert.equal((await proxy(request())).redirect, '/login', 'Student licence checks fail closed');
+  gateResult = { data: { ok: true, kind: 'school' }, error: null };
+  assert.equal((await proxy(request())).redirect, undefined, 'School sign-in still passes');
   delete process.env.NEXT_PUBLIC_SUPABASE_URL;
   result = await proxy(request()); assert.equal(result.request.headers.get('x-em-admin-session'), null);
   console.log('Admin auth: one user/profile lookup, forged header discarded, refresh preserved, inactive/password/login guards pass');

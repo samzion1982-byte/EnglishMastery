@@ -4812,3 +4812,7 @@ html[data-theme-mode='light'] .admin-shell .report-date-grid input[type='date'] 
 .report-school-list { max-height: min(42dvh, 380px); }
 .report-school-list > .admin-note { padding: 12px 14px; }
 .report-dialog-actions { flex-wrap: wrap; }
+
+.licence-date-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.licence-date-row input { min-width: 0; width: 100%; }
+.licence-validity { display: block; margin-top: 6px; font-size: 12px; line-height: 1.5; font-style: normal; overflow-wrap: anywhere; }

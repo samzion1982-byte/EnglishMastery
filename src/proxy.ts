@@ -70,10 +70,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (user && role === 'student' && !isLogin && !isChange && !isReset && !isJoin) {
+  if (user && !isLogin && !isReset && !isJoin) {
     const gate = await supabase.rpc('individual_sign_in_gate');
-    const body = gate.data && typeof gate.data === 'object' ? gate.data as { ok?: boolean } : null;
-    if (!gate.error && body && body.ok === false) {
+    const body = gate.data && typeof gate.data === 'object' ? gate.data as { ok?: boolean; kind?: string } : null;
+    if ((role === 'student' && (gate.error || !body)) || (body?.ok === false && (role === 'student' || body.kind === 'individual'))) {
       await supabase.auth.signOut();
       const next = request.nextUrl.clone();
       next.pathname = '/login';

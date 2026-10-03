@@ -1,3 +1,4 @@
+import { IndividualCompanionGuard } from '@/components/individual-companion-guard';
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './student-vibrant.css';
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>{children}</body>
+      <body><IndividualCompanionGuard />{children}</body>
     </html>
   );
 }

@@ -28,7 +28,7 @@ export function ChangePasswordForm() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await supabase.rpc('set_account_password', { p_password: password });
       if (error) throw error;
       const {
         data: { user },
@@ -48,7 +48,7 @@ export function ChangePasswordForm() {
   const mismatch = confirm.length >= password.length && password !== confirm;
   return (
     <form className="login-form" onSubmit={submit}>
-      <p className="login-lead">Your first password is 123456. Choose a new one that only you know.</p>
+      <p className="login-lead">Your first password is 123456. Choose a new one. For individual accounts, Super Admin can view the saved password for account recovery.</p>
       <label>
         New password
         <input type="password" required minLength={6} value={password} onChange={(e) => { setPassword(e.target.value); setError(''); }} />

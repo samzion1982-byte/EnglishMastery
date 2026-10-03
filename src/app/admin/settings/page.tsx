@@ -1,3 +1,4 @@
+import { TrustGateSettings } from '@/components/trustgate-settings';
 import { AdminThemeSettings } from '@/components/admin-theme-settings';
 import { redirect } from 'next/navigation';
 import { TranslationControls } from '@/components/translation-controls';
@@ -18,10 +19,12 @@ export default async function Settings() {
         <nav aria-label="Settings sections">
           <a href="#themes">Themes</a>
           <a href="#languages">Translation languages</a>
+          {role === 'super_admin' && <a href="#trustgate">TrustGate</a>}
         </nav>
         <div className="settings-sections">
           <AdminThemeSettings />
           <TranslationControls />
+          {role === 'super_admin' && <TrustGateSettings />}
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ASSIGNABLE_ROLES, ROLE_LABELS } from '@/lib/access';
 import { Icon } from '@/components/icon';
 import { MenuSelect } from '@/components/menu-select';
 import { useNotice } from '@/components/use-notice';
@@ -19,6 +20,7 @@ type Licence = {
   kind: Kind;
   name: string;
   contact_email: string | null;
+  licence_key: string | null;
   address: string | null;
   phone: string | null;
   seats: number;
@@ -110,6 +112,9 @@ function inForce(row: Licence, today: string) {
 
 export function LicencesManager() {
   const supabase = useMemo(() => createBrowserSupabase(), []);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, string>>({});
+  const [accountRole, setAccountRole] = useState('student');
+  const [createLearner, setCreateLearner] = useState(true);
   const [kind, setKind] = useState<Kind>('school');
   const [rows, setRows] = useState<Licence[]>([]);
   const [draft, setDraft] = useState<Draft>(() => emptyDraft('school'));
@@ -141,9 +146,9 @@ export function LicencesManager() {
     setLoading(true);
     setLoadError('');
     const page = <T,>(query: unknown) => query as PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-    const wide = 'id, kind, name, contact_email, address, phone, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
-    const wideNoContact = 'id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
-    const narrow = 'id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy';
+    const wide = 'licence_key, id, kind, name, contact_email, address, phone, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
+    const wideNoContact = 'licence_key, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
+    const narrow = 'licence_key, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy';
     let result = await fetchAll<Licence>((from, to) => page(supabase.from('em_licences').select(wide).order('name').order('id').range(from, to)));
     if (result.error && /address|phone/i.test(result.error.message)) {
       setContactFields(false);
@@ -160,7 +165,7 @@ export function LicencesManager() {
     if (result.error) {
       const missingTable = /em_licences/i.test(result.error.message) && !/school_code/i.test(result.error.message);
       const missingRoster = /school_code|em_roster|schema cache|does not exist/i.test(result.error.message);
-      setLoadError(missingTable
+      setLoadError(/licence_key/i.test(result.error.message) ? 'Run supabase/migrations/20261003120000_individual_accounts.sql, then retry.' : missingTable
         ? 'Run supabase/migrations/20260926130000_licences.sql in the Supabase SQL editor, then retry.'
         : missingRoster
           ? 'Run supabase/migrations/20260926140000_school_roster.sql in the Supabase SQL editor, then retry.'
@@ -185,6 +190,7 @@ export function LicencesManager() {
   }, []);
 
   useEffect(() => {
+    setVisiblePasswords({});
     if (form?.mode !== 'edit') {
       setLearners([]);
       setEvents([]);
@@ -383,16 +389,20 @@ export function LicencesManager() {
         setNotice(`${name} saved.`, 'success');
         finishClose();
       } else {
-        const { error } = await supabase.from('em_licences').insert({ ...payload, kind });
+        const { error } = kind === 'individual'
+          ? await supabase.rpc('create_individual_account', { p_details: payload, p_role: accountRole })
+          : await supabase.from('em_licences').insert({ ...payload, kind });
         if (error) throw error;
-        setNotice(`${name} added.`, 'success');
+        setNotice(kind === 'individual' ? `${name} and user account created. First password: 123456. Open the licence to copy its key.` : `${name} added.`, 'success');
         setDraft(emptyDraft(kind));
         finishClose();
       }
       await load();
     } catch (err) {
       const text = errorText(err, 'Could not save the licence.');
-      setFormError(/duplicate|school_code/i.test(text)
+      setFormError(/create_individual_account|provision_individual_learner|reset_individual_access|licence_key/i.test(text)
+        ? 'Run supabase/migrations/20261003120000_individual_accounts.sql, then retry.'
+        : /duplicate|school_code/i.test(text)
         ? 'That school id is already in use.'
         : /academic_year/i.test(text)
           ? 'Run supabase/migrations/20260926180000_school_year_and_open.sql in the Supabase SQL editor, then save again.'
@@ -461,6 +471,31 @@ export function LicencesManager() {
     }
   }
 
+  async function viewPassword(userId: string) {
+    if (visiblePasswords[userId]) { setVisiblePasswords((current) => { const next = { ...current }; delete next[userId]; return next; }); return; }
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc('view_individual_password', { p_user_id: userId });
+      if (error) throw error;
+      if (!data) { setFormError('This password predates recovery storage or was changed outside the app. Reset it to make it viewable.'); return; }
+      setVisiblePasswords((current) => ({ ...current, [userId]: String(data) }));
+    } catch (err) { setFormError(errorText(err, 'Could not view password.')); }
+    finally { setBusy(false); }
+  }
+
+  async function resetIndividual(userId: string, device: boolean) {
+    if (form?.mode !== 'edit' || busy) return;
+    if (!window.confirm(device ? 'Allow this learner to register a new computer?' : 'Reset this learner to 123456 and require a password change?')) return;
+    setBusy(true);
+    setVisiblePasswords({});
+    try {
+      const { error } = await supabase.rpc('reset_individual_access', { p_licence_id: form.id, p_user_id: userId, p_device: device });
+      if (error) throw error;
+      setNotice(device ? 'Device reset. Sign in with the licence key on the new computer.' : 'Password reset to 123456. The learner must change it at sign-in.', 'success');
+    } catch (err) { setFormError(errorText(err, 'Could not reset access.')); }
+    finally { setBusy(false); }
+  }
+
   async function addLearner(event: React.FormEvent) {
     event.preventDefault();
     if (form?.mode !== 'edit' || busy) return;
@@ -472,7 +507,9 @@ export function LicencesManager() {
     setBusy(true);
     setFormError('');
     try {
-      const { error } = await supabase.rpc('assign_individual_learner', { p_licence_id: form.id, p_email: email });
+      const { error } = createLearner
+        ? await supabase.rpc('provision_individual_learner', { p_licence_id: form.id, p_email: email, p_name: email.split('@')[0], p_role: accountRole })
+        : await supabase.rpc('assign_individual_learner', { p_licence_id: form.id, p_email: email });
       if (error) {
         if (/assign_individual_learner|schema cache/i.test(error.message)) {
           setFormError('Run supabase/migrations/20260926250000_licence_followup.sql in the Supabase SQL editor, then assign the learner again.');
@@ -481,7 +518,7 @@ export function LicencesManager() {
         throw error;
       }
       setLearnerEmail('');
-      setNotice(`${email} is on this licence.`, 'success');
+      setNotice(`${email} is on this licence.${createLearner ? ' First password: 123456.' : ''}`, 'success');
       const members = await supabase.from('em_individual_members').select('user_id').eq('licence_id', form.id);
       const ids = (members.data || []).map((row) => row.user_id as string);
       const profiles = ids.length ? await supabase.from('profiles').select('id, email, display_name').in('id', ids) : { data: [] };
@@ -583,14 +620,16 @@ export function LicencesManager() {
             ) : null}
             <label>
               {kind === 'school' ? 'Email id' : 'Contact email'}
-              <input type="email" autoComplete="email" value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
+              <input type="email" autoComplete="email" required={kind === 'individual'} value={draft.email} onChange={(event) => setDraft({ ...draft, email: event.target.value })} />
             </label>
+            {kind === 'individual' && form.mode === 'create' && (<label>Access level<select value={accountRole} onChange={(event) => setAccountRole(event.target.value)}>{ASSIGNABLE_ROLES.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>)}
             {kind === 'school' && yearField && (
               <label className="span-2">
                 Academic year
                 <input className="year-input" spellCheck={false} value={draft.academicYear} onChange={(event) => setDraft({ ...draft, academicYear: event.target.value })} />
               </label>
             )}
+            <div className="licence-date-row span-2">
             <label>
               Starts
               <input required type="date" value={draft.valid_from} onChange={(event) => setDraft({ ...draft, valid_from: event.target.value })} />
@@ -599,6 +638,7 @@ export function LicencesManager() {
               Ends
               <input type="date" value={draft.valid_until} onChange={(event) => setDraft({ ...draft, valid_until: event.target.value })} />
             </label>
+            </div>
             <label>
               Standing
               <MenuSelect label="Standing" value={draft.status} onChange={(value) => setDraft({ ...draft, status: value === 'suspended' ? 'suspended' : 'active' })} options={[{ value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]} />
@@ -620,9 +660,13 @@ export function LicencesManager() {
             </div>
             {formError ? <p className="notice error span-2" role="alert">{formError}</p> : null}
           </form>
-          <p className="meta licence-hint">{kind === 'school' ? 'The student count comes from the tracker. Leave the end date empty when the licence has no fixed end.' : 'Assign each learner by the email they use to sign in. Seats, dates, and standing are checked at sign-in.'}</p>
+          <p className="meta licence-hint">{kind === 'school' ? 'The student count comes from the tracker. Leave the end date empty when the licence has no fixed end.' : 'New accounts start with 123456 and must change it. Share the licence key and require the Windows companion app.'}</p>
           {form.mode === 'edit' && kind === 'individual' && (
             <form className="licence-editor" onSubmit={(event) => void addLearner(event)}>
+              <label className="span-2">Licence key<input readOnly value={rows.find((row) => row.id === form.id)?.licence_key || ''} /></label>
+              <p className="meta span-2">Super Admin can view saved individual passwords. Reset password sets 123456 and requires a change.</p>
+              <label><input type="checkbox" checked={createLearner} onChange={(event) => setCreateLearner(event.target.checked)} />Create a new user account</label>
+              {createLearner && <label>Access level<select value={accountRole} onChange={(event) => setAccountRole(event.target.value)}>{ASSIGNABLE_ROLES.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>}
               <label className="span-2">
                 Learner email
                 <input type="email" value={learnerEmail} onChange={(event) => setLearnerEmail(event.target.value)} placeholder="student@example.com" />
@@ -633,7 +677,7 @@ export function LicencesManager() {
               {learners.length > 0 && (
                 <ul className="meta span-2">
                   {learners.map((learner) => (
-                    <li key={learner.id}>{learner.name || learner.email} · {learner.email} <button type="button" className="quiet" disabled={busy} onClick={() => void removeLearner(learner.id)}>Remove</button></li>
+                    <li key={learner.id}>{learner.name || learner.email} · {learner.email} <button type="button" className="quiet" disabled={busy} onClick={() => void removeLearner(learner.id)}>Remove</button> <button type="button" className="quiet" disabled={busy} onClick={() => void resetIndividual(learner.id, false)}>Reset password</button> <button type="button" className="quiet" disabled={busy} onClick={() => void viewPassword(learner.id)}>{visiblePasswords[learner.id] ? 'Hide password' : 'View password'}</button> {visiblePasswords[learner.id] && <span>Password: {visiblePasswords[learner.id]}</span>} <button type="button" className="quiet" disabled={busy} onClick={() => void resetIndividual(learner.id, true)}>Reset device</button></li>
                   ))}
                 </ul>
               )}
@@ -720,7 +764,7 @@ export function LicencesManager() {
                   </td>
                   <td>{row.seats}</td>
                   <td>{showDate(row.valid_until)}</td>
-                  <td><span className={state.className}>{state.label}</span></td>
+                  <td><span className={state.className}>{state.label}</span>{kind === 'individual' && <small className="licence-validity">Licence Valid upto : {row.valid_until ? showDate(row.valid_until) : 'No fixed end'}</small>}</td>
                   <td>
                     <div className="licence-actions">
                       {kind === 'school' && row.school_code && (

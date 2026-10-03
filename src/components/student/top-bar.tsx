@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { IndividualValidity } from '../individual-validity';
 import { Icon } from '../icon';
 import { Logo } from '../logo';
 import { SignOutButton } from '../sign-out-button';
@@ -162,6 +163,7 @@ export function TopBar({
               <div className="s-menu-head">
                 <div>
                   <strong>{name}</strong>
+                  <IndividualValidity />
                   <span>{xp.toLocaleString()} XP in total</span>
                 </div>
                 {staff && (

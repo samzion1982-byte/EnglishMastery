@@ -21,6 +21,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
   const [intent, setIntent] = useState<Intent>(initialIntent);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [licenceKey, setLicenceKey] = useState('');
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(initialError === 'licence' ? 'This individual licence is not active.' : initialError === 'not-admin' ? 'This account does not have admin access.' : '');
@@ -49,6 +50,17 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
     setResetNote('');
     let leaving = false;
     try {
+      let individualDevice = '';
+      if (intent === 'individual') {
+        const policy = await supabase.rpc('trustgate_required');
+        if (policy.error || typeof policy.data !== 'boolean') throw new Error('Could not read TrustGate settings. Ask Super Admin to finish setup.');
+        if (policy.data) {
+        if (!/Windows/i.test(navigator.userAgent)) throw new Error('Use the Windows computer where the companion app is installed.');
+        const companion = await readCompanion();
+        if (!companion.ok) throw new Error('Open the English Mastery companion app on this computer, then try again.');
+        individualDevice = companion.deviceId;
+        }
+      }
       let signEmail = email;
       let signPassword = enteredPassword;
       if (intent === 'school') {
@@ -106,25 +118,16 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
         setMessage('This account does not have admin access.');
         return;
       }
-      if (intent === 'individual' && isAdminStaff(role)) {
-        await supabase.auth.signOut();
-        setMessage('This sign-in is for an individual student.');
-        return;
-      }
-      if (intent === 'individual' && role === 'student') {
+      if (intent === 'individual') {
+        const activation = await supabase.rpc('activate_individual_session', { p_key: licenceKey.trim(), p_device: individualDevice });
+        if (activation.error) { await supabase.auth.signOut(); throw activation.error; }
         const gate = await supabase.rpc('individual_sign_in_gate');
-        const body = gate.data && typeof gate.data === 'object' ? gate.data as { ok?: boolean; reason?: string; kind?: string } : null;
-        if (!gate.error && body && (body.kind === 'school' || body.ok === false)) {
+        if (gate.error || !gate.data?.ok || gate.data?.kind !== 'individual') {
           await supabase.auth.signOut();
-          setMessage(body.kind === 'school'
-            ? 'This sign-in is for an individual student.'
-            : body.reason === 'closed'
-              ? 'This individual licence is not active.'
-              : 'This account is not on an individual licence.');
-          return;
+          throw new Error('Individual access could not be verified. Ask Super Admin to check the licence.');
         }
       }
-      rememberLoginPreference(isAdminStaff(role) || isSchoolStaff(role) ? 'admin' : intent);
+      rememberLoginPreference(intent === 'individual' ? intent : isAdminStaff(role) || isSchoolStaff(role) ? 'admin' : intent);
       leaving = true;
       if (temporary) concealTemporaryPassword(form);
       window.location.assign(profile?.must_change_password
@@ -167,7 +170,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
         }
         throw error;
       }
-      setResetNote('If that email is a staff account, a reset link is on its way. You can also ask Super Admin to reset it.');
+      setResetNote('If an account uses that email, a reset link is on its way. You can also ask Super Admin to reset it.');
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Could not send the reset email.');
     } finally {
@@ -196,6 +199,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
           </label>
         ) : (
           <>
+            {intent === 'individual' && <label>Licence key<input required autoComplete="off" value={licenceKey} onChange={(event) => setLicenceKey(event.target.value)} /></label>}
             <label>
               Email
               <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -222,7 +226,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
               : 'Enter PIN 123456 on the Windows computer where you registered. There is no username or password.'}
         </p>
         {resetNote ? <p className="login-hint">{resetNote}</p> : null}
-        {intent === 'admin' ? (
+        {intent !== 'school' ? (
           <button type="button" className="login-switch" disabled={busy} onClick={() => void forgotPassword()}>Forgot password?</button>
         ) : null}
         {intent === 'admin'

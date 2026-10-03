@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useDialog } from './use-dialog';
+import { IndividualValidity } from './individual-validity';
 import Link, { useLinkStatus } from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ADMIN_PAGES, canOpenAdminPage, isFullAccess, isSchoolStaff, isSuperAdmin, ROLE_LABELS } from '@/lib/access';
@@ -106,6 +107,7 @@ export function AdminFrame({
             </span>
             <span>
               <strong>{name || ROLE_LABELS[role]}</strong>
+              <IndividualValidity />
               <em>{isSuperAdmin(role) ? 'Super Admin' : designation === 'principal' ? 'Principal' : designation === 'hod' ? 'HOD' : isSchoolStaff(role) ? 'School staff' : ROLE_LABELS[role] || role}</em>
             </span>
             <SignOutButton className="admin-signout danger" iconOnly to="/login?as=admin" />

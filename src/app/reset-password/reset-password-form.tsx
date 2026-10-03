@@ -44,7 +44,7 @@ export function ResetPasswordForm() {
     setError('');
     setBusy(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await supabase.rpc('set_account_password', { p_password: password });
       if (error) throw error;
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -62,6 +62,7 @@ export function ResetPasswordForm() {
   return (
     <form className="login-form" onSubmit={submit}>
       <p className="login-lead">Choose a new password</p>
+      <p className="login-hint">For individual accounts, Super Admin can view the saved password for account recovery.</p>
       <p className="login-hint">{message}</p>
       <label>
         New password
