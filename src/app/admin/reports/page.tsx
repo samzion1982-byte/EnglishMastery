@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
-import { canOpenReports, isSchoolStaff } from '@/lib/access';
+import { canOpenAdminPage, isSchoolStaff } from '@/lib/access';
+import { loadRoleGrants } from '@/lib/grants';
 import { readSchoolPost } from '@/lib/school-post';
 import { createServerSupabase } from '@/lib/supabase-server';
 import { getAdminSessionRole as getSessionRole } from '@/lib/admin-session';
@@ -9,7 +10,8 @@ export default async function ReportsPage() {
   const { role } = await getSessionRole();
   const supabase = await createServerSupabase();
   const post = isSchoolStaff(role) ? await readSchoolPost(supabase) : null;
-  if (!canOpenReports(role, post?.designation)) redirect('/admin/overview');
+  const grants = await loadRoleGrants(supabase, role || '');
+  if (!canOpenAdminPage(role, 'reports', grants, post?.designation)) redirect('/admin/overview');
   return (
     <ReportsManager
       role={role || ''}

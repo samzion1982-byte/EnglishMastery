@@ -23,3 +23,7 @@ assert.equal(canOpenAdminPage('user4', 'appendix', { appendix: true }), true);
 assert.equal(canOpenAdminPage('student', 'appendix', { appendix: true }), false);
 assert.equal(canOpenAdminPage('school_admin', 'school-staff', {}, 'principal'), true);
 console.log('Access checks passed: Super Admin restrictions override grants; learning permissions still apply.');
+assert.equal(canOpenAdminPage('admin1', 'reports', { reports: false }), false);
+assert.equal(canOpenAdminPage('user4', 'reports', { reports: true }), true);
+assert.equal(canOpenAdminPage('school_admin', 'reports', { reports: false }, 'principal'), false);
+assert.equal(canOpenAdminPage('super_admin', 'reports', { reports: false }), true);
