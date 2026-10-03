@@ -20,7 +20,7 @@ type Licence = {
   kind: Kind;
   name: string;
   contact_email: string | null;
-  licence_key: string | null;
+  csv_validity_error?: string;
   address: string | null;
   phone: string | null;
   seats: number;
@@ -101,13 +101,14 @@ function showDate(value: string | null) {
 
 function standing(row: Licence, today: string) {
   if (row.status === 'suspended') return { label: 'Suspended', className: 'status off' };
+  if (row.csv_validity_error) return { label: 'Validity unavailable', className: 'status warn' };
   if (row.valid_until && row.valid_until < today) return { label: 'Ended', className: 'status warn' };
   if (row.valid_from > today) return { label: 'Starts later', className: 'status warn' };
   return { label: 'Active', className: 'status on' };
 }
 
 function inForce(row: Licence, today: string) {
-  return row.status === 'active' && row.valid_from <= today && (!row.valid_until || row.valid_until >= today);
+  return !row.csv_validity_error && row.status === 'active' && row.valid_from <= today && (!row.valid_until || row.valid_until >= today);
 }
 
 export function LicencesManager() {
@@ -146,9 +147,9 @@ export function LicencesManager() {
     setLoading(true);
     setLoadError('');
     const page = <T,>(query: unknown) => query as PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
-    const wide = 'licence_key, id, kind, name, contact_email, address, phone, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
-    const wideNoContact = 'licence_key, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
-    const narrow = 'licence_key, id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy';
+    const wide = 'id, kind, name, contact_email, address, phone, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
+    const wideNoContact = 'id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy, academic_year';
+    const narrow = 'id, kind, name, contact_email, seats, valid_from, valid_until, status, accepting_devices, school_code, second_device_policy';
     let result = await fetchAll<Licence>((from, to) => page(supabase.from('em_licences').select(wide).order('name').order('id').range(from, to)));
     if (result.error && /address|phone/i.test(result.error.message)) {
       setContactFields(false);
@@ -171,10 +172,19 @@ export function LicencesManager() {
           ? 'Run supabase/migrations/20260926140000_school_roster.sql in the Supabase SQL editor, then retry.'
           : result.error.message);
     } else {
+      let dates: Record<string, { date: string | null; error?: string }> = {};
+      let issue = '';
+      try {
+        const response = await fetch('/api/admin/licence-validity', { cache: 'no-store' });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || 'CSV validity unavailable.');
+        dates = body.dates;
+      } catch (err) { issue = errorText(err, 'CSV validity unavailable.'); }
       setRows(result.data.map((row) => ({
         ...row,
         valid_from: String(row.valid_from).slice(0, 10),
-        valid_until: row.valid_until ? String(row.valid_until).slice(0, 10) : null,
+        valid_until: row.kind === 'individual' ? dates[(row.contact_email || '').trim().toLowerCase()]?.date || null : row.valid_until ? String(row.valid_until).slice(0, 10) : null,
+        csv_validity_error: row.kind === 'individual' ? issue || dates[(row.contact_email || '').trim().toLowerCase()]?.error || (!dates[(row.contact_email || '').trim().toLowerCase()] ? 'Email not assigned in CSV' : undefined) : undefined,
         academic_year: row.academic_year || null,
         address: row.address || null,
         phone: row.phone || null,
@@ -310,7 +320,7 @@ export function LicencesManager() {
     if (kind === 'school' && address.length > 200) return { error: 'The address can be at most 200 characters.' };
     if (kind === 'school' && phone && (phone.length < 6 || phone.length > 20 || !/^[\d+\-().\s]+$/.test(phone))) return { error: 'Enter a phone number, or leave it blank.' };
     if (!draft.valid_from) return { error: 'Choose the date the licence starts.' };
-    if (draft.valid_until && draft.valid_until < draft.valid_from) return { error: 'The end date must be on or after the start date.' };
+    if (kind === 'school' && draft.valid_until && draft.valid_until < draft.valid_from) return { error: 'The end date must be on or after the start date.' };
     const academicYear = year ? parseAcademicYear(year) : null;
     if (kind === 'school' && yearField && !academicYear) return { error: 'Enter the academic year as 2026-27.' };
     if (kind === 'school') {
@@ -365,7 +375,7 @@ export function LicencesManager() {
       school_code: schoolCode,
       second_device_policy: draft.policy,
     };
-    if (kind === 'individual') payload.seats = seats;
+    if (kind === 'individual') { payload.seats = seats; delete (payload as { valid_until?: string | null }).valid_until; }
     else if (form?.mode === 'create') payload.seats = 0;
     if (yearField && kind === 'school') payload.academic_year = academicYear;
     if (contactFields && kind === 'school') {
@@ -393,7 +403,7 @@ export function LicencesManager() {
           ? await supabase.rpc('create_individual_account', { p_details: payload, p_role: accountRole })
           : await supabase.from('em_licences').insert({ ...payload, kind });
         if (error) throw error;
-        setNotice(kind === 'individual' ? `${name} and user account created. First password: 123456. Open the licence to copy its key.` : `${name} added.`, 'success');
+        setNotice(kind === 'individual' ? `${name} and user account created. First password: 123456. Assign and share its prefilled AUTH CODE from the Google sheet.` : `${name} added.`, 'success');
         setDraft(emptyDraft(kind));
         finishClose();
       }
@@ -629,16 +639,18 @@ export function LicencesManager() {
                 <input className="year-input" spellCheck={false} value={draft.academicYear} onChange={(event) => setDraft({ ...draft, academicYear: event.target.value })} />
               </label>
             )}
-            <div className="licence-date-row span-2">
-            <label>
-              Starts
-              <input required type="date" value={draft.valid_from} onChange={(event) => setDraft({ ...draft, valid_from: event.target.value })} />
-            </label>
-            <label>
-              Ends
-              <input type="date" value={draft.valid_until} onChange={(event) => setDraft({ ...draft, valid_until: event.target.value })} />
-            </label>
-            </div>
+            {kind === 'school' && (
+              <div className="licence-date-row span-2">
+                <label>
+                  Starts
+                  <input required type="date" value={draft.valid_from} onChange={(event) => setDraft({ ...draft, valid_from: event.target.value })} />
+                </label>
+                <label>
+                  Ends
+                  <input type="date" value={draft.valid_until} onChange={(event) => setDraft({ ...draft, valid_until: event.target.value })} />
+                </label>
+              </div>
+            )}
             <label>
               Standing
               <MenuSelect label="Standing" value={draft.status} onChange={(value) => setDraft({ ...draft, status: value === 'suspended' ? 'suspended' : 'active' })} options={[{ value: 'active', label: 'Active' }, { value: 'suspended', label: 'Suspended' }]} />
@@ -663,7 +675,7 @@ export function LicencesManager() {
           <p className="meta licence-hint">{kind === 'school' ? 'The student count comes from the tracker. Leave the end date empty when the licence has no fixed end.' : 'New accounts start with 123456 and must change it. Share the assigned Google sheet AUTH CODE. TrustGate follows the Super Admin setting.'}</p>
           {form.mode === 'edit' && kind === 'individual' && (
             <form className="licence-editor" onSubmit={(event) => void addLearner(event)}>
-<p className="meta span-2">Assign a prefilled AUTH CODE in EM_Licenses to this learner email and set Validation Status to Active. Share that sheet key with the learner; generated local keys are no longer used.</p>
+              <p className="meta span-2">Assign a prefilled AUTH CODE in EM_Licenses to this learner email and set Validation Status to Active. Share that sheet key with the learner; generated local keys are no longer used.</p>
               <p className="meta span-2">Super Admin can view saved individual passwords. Reset password sets 123456 and requires a change.</p>
               <label><input type="checkbox" checked={createLearner} onChange={(event) => setCreateLearner(event.target.checked)} />Create a new user account</label>
               {createLearner && <label>Access level<select value={accountRole} onChange={(event) => setAccountRole(event.target.value)}>{ASSIGNABLE_ROLES.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>}
@@ -723,6 +735,7 @@ export function LicencesManager() {
           <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={kind === 'school' ? 'Name or school id' : 'Name or email'} />
         </label>
         <button type="button" className="go" onClick={openCreate}>Add {copy.singular}</button>
+        {kind === 'individual' && <button type="button" disabled={loading || busy} onClick={() => void load()}>Refresh CSV validity</button>}
       </div>
 
       {loadError && (
@@ -763,8 +776,8 @@ export function LicencesManager() {
                     )}
                   </td>
                   <td>{row.seats}</td>
-                  <td>{showDate(row.valid_until)}</td>
-                  <td><span className={state.className}>{state.label}</span>{kind === 'individual' && <small className="licence-validity">Licence Valid upto : {row.valid_until ? showDate(row.valid_until) : 'No fixed end'}</small>}</td>
+                  <td>{row.kind === 'individual' && row.csv_validity_error ? row.csv_validity_error : showDate(row.valid_until)}</td>
+                  <td><span className={state.className}>{state.label}</span>{kind === 'individual' && <small className="licence-validity">Licence Valid upto : {row.valid_until ? showDate(row.valid_until) : 'Unavailable'}</small>}</td>
                   <td>
                     <div className="licence-actions">
                       {kind === 'school' && row.school_code && (
