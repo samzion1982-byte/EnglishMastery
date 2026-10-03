@@ -1,3 +1,4 @@
+import { LoginSessionTracker } from '@/components/login-session-tracker';
 import { IndividualCompanionGuard } from '@/components/individual-companion-guard';
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body><IndividualCompanionGuard />{children}</body>
+      <body><LoginSessionTracker /><IndividualCompanionGuard />{children}</body>
     </html>
   );
 }

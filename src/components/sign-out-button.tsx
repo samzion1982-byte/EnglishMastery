@@ -14,7 +14,13 @@ export function SignOutButton({ className = 'quiet', icon = false, iconOnly = fa
       title={iconOnly ? 'Sign out' : undefined}
       onClick={async () => {
         sessionStorage.removeItem('em-active-use');
-        await createBrowserSupabase().auth.signOut();
+        const supabase = createBrowserSupabase();
+        try {
+          await supabase.rpc('touch_login_session', { p_end: true });
+        } catch {
+          // Sign out even if logging is unavailable.
+        }
+        await supabase.auth.signOut();
         router.replace(to);
         router.refresh();
       }}

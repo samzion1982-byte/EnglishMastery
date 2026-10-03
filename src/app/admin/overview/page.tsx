@@ -49,7 +49,7 @@ export default async function Overview() {
     permissions: 'Choose which learning pages each level can open.',
     licences: 'Upload a school tracker, copy its registration link, and approve waiting students.',
     reports: 'Download a learning workbook for the classes you cover.',
-    logs: 'See who is using speech recognition, how many speak at once, and when Groq is rate-limiting checks.',
+    logs: 'Review user login times, session durations and speech recognition activity.',
   };
   const title = post?.designation ? DESIGNATION[post.designation] || post.designation : '';
   const schoolLine = post ? [post.school, title, post.email].filter(Boolean).join(' · ') : '';

@@ -22,7 +22,7 @@ export const ADMIN_PAGES = [
   { key: 'licences', label: 'Licences', path: '/admin/licences', alwaysOn: false, superOnly: true, principalOnly: false, section: 'distribution' },
   { key: 'settings', label: 'Settings', path: '/admin/settings', alwaysOn: false, superOnly: false, principalOnly: false, section: 'settings' },
   { key: 'reports', label: 'Reports', path: '/admin/reports', alwaysOn: false, superOnly: false, principalOnly: false, section: 'reports' },
-  { key: 'logs', label: 'Speech recognition', path: '/admin/logs', alwaysOn: false, superOnly: false, principalOnly: false, section: 'logs' },
+  { key: 'logs', label: 'Logs', path: '/admin/logs', alwaysOn: false, superOnly: false, principalOnly: false, section: 'logs' },
 ] as const;
 
 export const STUDENT_DEFAULT_PASSWORD = '123456';

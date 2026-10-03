@@ -4834,3 +4834,13 @@ html[data-theme-mode='light'] .admin-shell .report-date-grid input[type='date'] 
 .licence-editor > label { display: flex; flex-direction: column; align-self: start; gap: 6px; }
 .licence-editor > label > input:not([type="checkbox"]) { height: 50px; min-width: 0; width: 100%; box-sizing: border-box; flex: none; }
 .licence-editor > label > small { font-size: 12px; line-height: 1.5; }
+
+/* Login audit table keeps timestamps readable on narrow screens. */
+.login-log-controls { display:flex; gap:12px; flex-wrap:wrap; align-items:end; margin:16px 0; }
+.login-log-controls label { display:grid; gap:6px; }
+.login-log-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:12px; }
+.login-log-table { width:100%; border-collapse:collapse; }
+.login-log-table th, .login-log-table td { padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+.login-log-table th { background:var(--accent); color:white; }
+.login-log-table td small { display:block; color:var(--muted); margin-top:4px; }
+.login-log-controls button[aria-pressed=true] { background:var(--accent); color:white; }

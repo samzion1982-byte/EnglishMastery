@@ -49,6 +49,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
     setResetNote('');
     let leaving = false;
     try {
+      let schoolDevice = '';
       let individualDevice = '';
       if (intent === 'individual') {
         const policy = await supabase.rpc('trustgate_required');
@@ -95,6 +96,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
                 : 'This computer is not registered. Use the link from your school first.');
           return;
         }
+        schoolDevice = companion.deviceId;
         signEmail = body.email;
         signPassword = STUDENT_DEFAULT_PASSWORD;
       }
@@ -125,6 +127,13 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
         if (gate.error || !gate.data?.ok || gate.data?.kind !== 'individual') {
           await supabase.auth.signOut();
           throw new Error('Individual access could not be verified. Ask Super Admin to check the licence.');
+        }
+      }
+      if (intent === 'school' && schoolDevice) {
+        try {
+          await supabase.rpc('record_school_login_session', { p_device: schoolDevice, p_user_agent: navigator.userAgent });
+        } catch {
+          // Logging availability must not prevent an approved school login.
         }
       }
       rememberLoginPreference(intent === 'individual' ? intent : isAdminStaff(role) || isSchoolStaff(role) ? 'admin' : intent);

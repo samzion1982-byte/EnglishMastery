@@ -42,7 +42,7 @@ const TREE: CategoryNode[] = SECTIONS.map((section) => ({
   kind: 'category',
   children: ADMIN_PAGES.filter((page) => page.section === section.key).map((page) => ({
     key: page.key,
-    label: page.key === 'logs' ? 'Logs / Speech recognition' : page.label,
+    label: page.label,
     kind: 'page',
     restriction: page.superOnly ? 'Super Admin only' : page.principalOnly ? 'School Principal only' : undefined,
   })),
