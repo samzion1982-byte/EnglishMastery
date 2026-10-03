@@ -4820,3 +4820,11 @@ html[data-theme-mode='light'] .admin-shell .report-date-grid input[type='date'] 
 .login-licence-dialog { width: min(440px, calc(100vw - 32px)); padding: 28px; border: 1px solid #cbd5e1; border-radius: 20px; background: #fff; color: #172b45; box-shadow: 0 24px 80px #0004; }
 .login-licence-dialog::backdrop { background: #0c172a99; }
 .login-licence-dialog h2 { margin: 0; }
+
+.individual-learner-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 12px; }
+.individual-learner-card { padding: 14px; border: 1px solid #cbd5e180; border-radius: 12px; display: grid; gap: 12px; min-width: 0; }
+.individual-learner-details { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; overflow-wrap: anywhere; }
+.individual-learner-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.admin-shell .individual-learner-actions button { margin: 0; width: 100%; min-height: 44px; padding: 10px 6px; }
+.individual-learner-password { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 540px) { .individual-learner-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -687,9 +687,18 @@ export function LicencesManager() {
                 <button type="submit" disabled={busy}>Add learner</button>
               </div>
               {learners.length > 0 && (
-                <ul className="meta span-2">
+                <ul className="meta span-2 individual-learner-list">
                   {learners.map((learner) => (
-                    <li key={learner.id}>{learner.name || learner.email} · {learner.email} <button type="button" className="quiet" disabled={busy} onClick={() => void removeLearner(learner.id)}>Remove</button> <button type="button" className="quiet" disabled={busy} onClick={() => void resetIndividual(learner.id, false)}>Reset password</button> <button type="button" className="quiet" disabled={busy} onClick={() => void viewPassword(learner.id)}>{visiblePasswords[learner.id] ? 'Hide password' : 'View password'}</button> {visiblePasswords[learner.id] && <span>Password: {visiblePasswords[learner.id]}</span>} <button type="button" className="quiet" disabled={busy} onClick={() => void resetIndividual(learner.id, true)}>Reset device</button></li>
+                    <li key={learner.id} className="individual-learner-card">
+                      <div className="individual-learner-details"><strong>{learner.name || learner.email}</strong><span>{learner.email}</span></div>
+                      <div className="individual-learner-actions" role="group" aria-label={`Actions for ${learner.name || learner.email}`}>
+                        <button type="button" className="quiet" disabled={busy} onClick={() => void viewPassword(learner.id)}>{visiblePasswords[learner.id] ? 'Hide password' : 'View password'}</button>
+                        <button type="button" className="quiet" disabled={busy} onClick={() => void resetIndividual(learner.id, false)}>Reset password</button>
+                        <button type="button" className="quiet" disabled={busy} onClick={() => void resetIndividual(learner.id, true)}>Reset device</button>
+                        <button type="button" className="quiet danger" disabled={busy} onClick={() => void removeLearner(learner.id)}>Remove</button>
+                      </div>
+                      {visiblePasswords[learner.id] && <p className="individual-learner-password">Password: {visiblePasswords[learner.id]}</p>}
+                    </li>
                   ))}
                 </ul>
               )}
