@@ -14,13 +14,15 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.invalid';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test';
 let user = { id: 'real-user' }, profile = { role: 'super_admin', nickname: 'Admin', is_active: true }, authCalls = 0, profileCalls = 0, fallbackCalls = 0;
 let forwarded;
+let remoteAllowed = false;
 let gateResult = { data: { ok: false, reason: 'none' }, error: null };
 const response = (options = {}) => ({ ...options, cookies: { values: [], set(item, value) { this.values.push(typeof item === 'string' ? { name: item, value } : item); }, getAll() { return this.values; } } });
 const proxy = load('src/proxy.ts', {
+  '@/lib/licence-csv': { readCsvLicence: async () => { if (!remoteAllowed) throw Error('Unavailable'); return {}; } },
   '@/lib/access': access,
   'next/server': { NextResponse: { next: options => response(options), redirect: url => response({ redirect: url.pathname }) } },
   '@supabase/ssr': { createServerClient: (url, key, options) => ({
-    rpc: async () => gateResult,
+    rpc: async (name) => name === 'my_csv_licence_context' ? { data: { key: 'K1' }, error: null } : gateResult,
     auth: { getUser: async () => { authCalls++; options.cookies.setAll([{ name: 'refresh', value: 'updated', options: {} }]); return { data: { user } }; }, signOut: async () => {} },
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => { profileCalls++; return { data: profile }; } }) }) }),
   }) },
@@ -46,7 +48,7 @@ function request() {
   assert.equal((await proxy(request())).redirect, '/change-password');
   user = null;
   assert.equal((await proxy(request())).redirect, '/login');
-  user = { id: 'student' }; profile = { role: 'other' };
+  user = { id: 'student', email: 'user@example.com' }; profile = { role: 'other' };
   result = await proxy(request());
   assert.equal(result.request.headers.get('x-em-admin-session'), null);
   forwarded = new Headers(); await session(); assert.equal(fallbackCalls, 1);
@@ -60,6 +62,12 @@ function request() {
   assert.equal((await proxy(request())).redirect, '/login', 'Student licence checks fail closed');
   gateResult = { data: { ok: true, kind: 'school' }, error: null };
   assert.equal((await proxy(request())).redirect, undefined, 'School sign-in still passes');
+  gateResult = { data: { ok: true, kind: 'individual' }, error: null };
+  profile = { role: 'super_admin', is_active: true };
+  remoteAllowed = false;
+  assert.equal((await proxy(request())).redirect, '/login', 'Individual staff are rejected when the CSV check fails');
+  remoteAllowed = true;
+  assert.equal((await proxy(request())).redirect, undefined, 'Verified individual staff pass the remote check');
   delete process.env.NEXT_PUBLIC_SUPABASE_URL;
   result = await proxy(request()); assert.equal(result.request.headers.get('x-em-admin-session'), null);
   console.log('Admin auth: one user/profile lookup, forged header discarded, refresh preserved, inactive/password/login guards pass');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createBrowserSupabase } from '@/lib/supabase';
 import { STUDENT_DEFAULT_PASSWORD, isAdminStaff, isSchoolStaff } from '@/lib/access';
@@ -21,6 +21,9 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
   const [intent, setIntent] = useState<Intent>(initialIntent);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pendingLicence, setPendingLicence] = useState<{ mustChange: boolean } | null>(null);
+  const [licenceError, setLicenceError] = useState('');
+  const licenceDialog = useRef<HTMLDialogElement>(null);
   const [licenceKey, setLicenceKey] = useState('');
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
@@ -35,6 +38,43 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
     if (params.get('error') === 'licence') setMessage('This individual licence is not active.');
   }, [params, initialIntent]);
 
+
+  useEffect(() => {
+    if (pendingLicence) licenceDialog.current?.showModal();
+    else licenceDialog.current?.close();
+  }, [pendingLicence]);
+
+  async function cancelLicence() {
+    if (busy) return;
+    await supabase.auth.signOut();
+    setPendingLicence(null); setLicenceKey(''); setLicenceError('');
+  }
+
+  async function validateLicence(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pendingLicence || busy) return;
+    setBusy(true); setLicenceError('');
+    try {
+      // Read the companion again in case it was closed while entering the key.
+      const policy = await supabase.rpc('trustgate_required');
+      if (policy.error || typeof policy.data !== 'boolean') throw new Error('Could not read TrustGate settings.');
+      let device = '';
+      if (policy.data) {
+        const companion = await readCompanion();
+        if (!companion.ok) throw new Error('Open the companion app, then try again.');
+        device = companion.deviceId;
+      }
+      const response = await fetch('/api/individual/licence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: licenceKey.trim(), device }) });
+      const activation = await response.json();
+      if (!response.ok || !activation.ok) throw new Error(activation.error || 'Could not validate the licence.');
+      rememberLoginPreference('individual');
+      setLicenceKey('');
+      window.location.assign(pendingLicence.mustChange ? '/change-password' : '/');
+    } catch (err) {
+      setLicenceError(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Could not validate the licence key.');
+      setBusy(false);
+    }
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -119,8 +159,15 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
         return;
       }
       if (intent === 'individual') {
-        const activation = await supabase.rpc('activate_individual_session', { p_key: licenceKey.trim(), p_device: individualDevice });
-        if (activation.error) { await supabase.auth.signOut(); throw activation.error; }
+        const response = await fetch('/api/individual/licence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ device: individualDevice }) });
+        const activation = await response.json();
+        if (!response.ok) { await supabase.auth.signOut(); throw new Error(activation.error || 'Could not check the licence sheet.'); }
+        if (activation.needsKey) {
+          setPendingLicence({ mustChange: !!profile?.must_change_password });
+          setPassword('');
+          setLicenceKey(''); setLicenceError('');
+          return;
+        }
         const gate = await supabase.rpc('individual_sign_in_gate');
         if (gate.error || !gate.data?.ok || gate.data?.kind !== 'individual') {
           await supabase.auth.signOut();
@@ -143,7 +190,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
           : text);
     } finally {
       if (!leaving) {
-        if (temporary) setPassword(enteredPassword);
+        if (temporary && intent !== 'individual') setPassword(enteredPassword);
         setBusy(false);
       }
     }
@@ -190,7 +237,7 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
           </button>
         </div>
       )}
-      <form onSubmit={submit} className="login-form" autoComplete={password === STUDENT_DEFAULT_PASSWORD ? 'off' : 'on'}>
+      <form inert={!!pendingLicence} onSubmit={submit} className="login-form" autoComplete={password === STUDENT_DEFAULT_PASSWORD ? 'off' : 'on'}>
         <p className="login-lead" key={`lead-${intent}`}>{intent === 'admin' ? 'Staff console' : 'Learner hub'}</p>
         {intent === 'school' ? (
           <label>
@@ -199,7 +246,6 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
           </label>
         ) : (
           <>
-            {intent === 'individual' && <label>Licence key<input required autoComplete="off" value={licenceKey} onChange={(event) => setLicenceKey(event.target.value)} /></label>}
             <label>
               Email
               <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -233,6 +279,16 @@ export function LoginForm({ initialIntent = 'school', initialError = '' }: { ini
           ? <a className="login-switch" href="/login?as=school">Student sign in</a>
           : <a className="login-switch" href="/login?as=admin">Staff sign in</a>}
       </form>
+      <dialog ref={licenceDialog} className="login-licence-dialog" aria-labelledby="licence-key-title" onCancel={(event) => { event.preventDefault(); void cancelLicence(); }}>
+        <form className="login-form" onSubmit={validateLicence}>
+          <h2 id="licence-key-title">Activate your licence</h2>
+          <p>Enter the licence key shared by Super Admin. You only need to validate it once for this account.</p>
+          <label>Licence key<input autoFocus required autoComplete="off" value={licenceKey} onChange={(event) => setLicenceKey(event.target.value)} /></label>
+          {licenceError && <p className="login-error" role="alert">{licenceError}</p>}
+          <button className="go" type="submit" disabled={busy}>{busy ? 'Validating...' : 'Validate licence'}</button>
+          <button type="button" className="login-switch" disabled={busy} onClick={() => void cancelLicence()}>Cancel sign-in</button>
+        </form>
+      </dialog>
     </div>
   );
 }

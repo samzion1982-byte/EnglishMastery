@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { readCsvLicence } from '@/lib/licence-csv';
 import { isAdminStaff, isSchoolStaff } from '@/lib/access';
 
 export async function proxy(request: NextRequest) {
@@ -23,10 +24,17 @@ export async function proxy(request: NextRequest) {
     },
   });
 
+  function redirect(url: URL) {
+    const next = NextResponse.redirect(url);
+    for (const cookie of response.cookies.getAll()) next.cookies.set(cookie);
+    return next;
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
+  const isLicenceApi = path === '/api/individual/licence';
   const isLogin = path === '/login' || path.startsWith('/login/');
   const isChange = path === '/change-password' || path.startsWith('/change-password/');
   const isReset = path === '/reset-password' || path.startsWith('/reset-password/');
@@ -36,7 +44,7 @@ export async function proxy(request: NextRequest) {
     const next = request.nextUrl.clone();
     next.pathname = '/login';
     if (path.startsWith('/admin')) next.searchParams.set('as', 'admin');
-    return NextResponse.redirect(next);
+    return redirect(next);
   }
 
   let role: string | null = null;
@@ -48,13 +56,13 @@ export async function proxy(request: NextRequest) {
       const next = request.nextUrl.clone();
       next.pathname = '/login';
       next.search = '';
-      return NextResponse.redirect(next);
+      return redirect(next);
     }
-    if (profile?.must_change_password && !isChange && !isReset) {
+    if (profile?.must_change_password && !isChange && !isReset && !isLicenceApi) {
       const next = request.nextUrl.clone();
       next.pathname = '/change-password';
       next.search = '';
-      return NextResponse.redirect(next);
+      return redirect(next);
     }
     if ((path === '/admin' || path.startsWith('/admin/')) && (isAdminStaff(role) || isSchoolStaff(role))) {
       const forwarded = new Headers(request.headers);
@@ -70,15 +78,23 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (user && !isLogin && !isReset && !isJoin) {
+  if (user && !isLogin && !isReset && !isJoin && !isLicenceApi) {
     const gate = await supabase.rpc('individual_sign_in_gate');
     const body = gate.data && typeof gate.data === 'object' ? gate.data as { ok?: boolean; kind?: string } : null;
-    if ((role === 'student' && (gate.error || !body)) || (body?.ok === false && (role === 'student' || body.kind === 'individual'))) {
+    let sheetRejected = false;
+    if (body?.kind === 'individual' && body.ok) {
+      try {
+        const context = await supabase.rpc('my_csv_licence_context');
+        if (context.error || !context.data?.key || !user.email) throw new Error('Licence missing');
+        await readCsvLicence(context.data.key, user.email);
+      } catch { sheetRejected = true; }
+    }
+    if (sheetRejected || (role === 'student' && (gate.error || !body)) || (body?.ok === false && (role === 'student' || body.kind === 'individual'))) {
       await supabase.auth.signOut();
       const next = request.nextUrl.clone();
       next.pathname = '/login';
       next.search = '?as=individual&error=licence';
-      return NextResponse.redirect(next);
+      return redirect(next);
     }
   }
 
@@ -86,7 +102,7 @@ export async function proxy(request: NextRequest) {
     const dest = request.nextUrl.clone();
     dest.pathname = '/';
     dest.search = '';
-    return NextResponse.redirect(dest);
+    return redirect(dest);
   }
 
   return response;

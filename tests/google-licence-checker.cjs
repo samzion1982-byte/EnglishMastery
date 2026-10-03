@@ -1,0 +1,17 @@
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const context = vm.createContext({});
+vm.runInContext(fs.readFileSync('scripts/google-licence-checker.gs', 'utf8'), context);
+const check = (rows, key = 'K1', email = 'user@example.com') => JSON.parse(JSON.stringify(context.checkLicenceRows(rows, key, email)));
+const headers = ['AUTH CODE', 'User Name', 'Email', 'Validation Status'];
+const active = ['K1', 'User', 'user@example.com', 'Active'];
+assert.deepEqual(check([headers, active]), { ok: true });
+assert.equal(check([headers, active], 'K1', 'another@example.com').ok, false);
+assert.equal(check([headers, ['K1', 'User', 'user@example.com', 'Inactive']]).ok, false);
+assert.equal(check([headers, ['K1', 'User', 'user@example.com', '']]).ok, false);
+assert.equal(check([headers, active, active]).ok, false);
+assert.equal(check([['AUTH CODE', 'Validation Status'], ['K1', 'Active']]).reason, 'invalid_columns');
+assert.equal(check([headers, active], 'missing').ok, false);
+assert.equal(check([headers, [' K1 ', 'User', ' USER@example.com ', ' active ']]).ok, true);
+console.log('Google licence row checks: assignment, status, missing headers and duplicate keys pass');

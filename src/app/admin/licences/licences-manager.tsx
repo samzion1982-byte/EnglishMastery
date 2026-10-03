@@ -660,10 +660,10 @@ export function LicencesManager() {
             </div>
             {formError ? <p className="notice error span-2" role="alert">{formError}</p> : null}
           </form>
-          <p className="meta licence-hint">{kind === 'school' ? 'The student count comes from the tracker. Leave the end date empty when the licence has no fixed end.' : 'New accounts start with 123456 and must change it. Share the licence key and require the Windows companion app.'}</p>
+          <p className="meta licence-hint">{kind === 'school' ? 'The student count comes from the tracker. Leave the end date empty when the licence has no fixed end.' : 'New accounts start with 123456 and must change it. Share the assigned Google sheet AUTH CODE. TrustGate follows the Super Admin setting.'}</p>
           {form.mode === 'edit' && kind === 'individual' && (
             <form className="licence-editor" onSubmit={(event) => void addLearner(event)}>
-              <label className="span-2">Licence key<input readOnly value={rows.find((row) => row.id === form.id)?.licence_key || ''} /></label>
+<p className="meta span-2">Assign a prefilled AUTH CODE in EM_Licenses to this learner email and set Validation Status to Active. Share that sheet key with the learner; generated local keys are no longer used.</p>
               <p className="meta span-2">Super Admin can view saved individual passwords. Reset password sets 123456 and requires a change.</p>
               <label><input type="checkbox" checked={createLearner} onChange={(event) => setCreateLearner(event.target.checked)} />Create a new user account</label>
               {createLearner && <label>Access level<select value={accountRole} onChange={(event) => setAccountRole(event.target.value)}>{ASSIGNABLE_ROLES.map((role) => <option key={role} value={role}>{ROLE_LABELS[role]}</option>)}</select></label>}
