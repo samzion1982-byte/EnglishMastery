@@ -760,23 +760,21 @@ html[data-theme-mode='light'] .student .card {
 .look-add-tracks button {
   min-height: 34px;
   padding: 4px 12px;
-  border: 1.5px solid var(--line-2);
+  border: 1.5px solid #f59e0b;
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--gloss), transparent 70%), var(--surface-2);
+  background: #fbbf24;
   box-shadow: var(--chip-shine);
-  color: var(--text-2);
+  color: #422006;
   font-size: 13px;
   font-weight: 700;
 }
 .look-add-tracks button.on {
-  color: var(--tone);
-  border-color: color-mix(in srgb, var(--tone) 55%, var(--line-2));
-  background: linear-gradient(180deg, var(--gloss), transparent 70%), var(--tone-soft);
-  box-shadow: 0 0 0 2px var(--tone-soft), var(--chip-shine);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px currentColor, var(--chip-shine);
 }
-.look-add-tracks button.suggested:not(.on) {
-  border-style: dashed;
-  border-color: color-mix(in srgb, var(--tone) 40%, var(--line-2));
+.look-add-tracks button.suggested {
+  color: #fff;
+  border-color: #16a34a;
+  background: #16a34a;
 }
 .look-add-error { margin: 0; font-size: 13px; color: var(--coral); }
 .eyebrow.look-out {
