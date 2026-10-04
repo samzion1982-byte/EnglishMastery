@@ -153,14 +153,14 @@ html[data-theme][data-admin-style] .admin-shell details.admin-nav-fold { display
 .admin-shell .admin-nav-fold > summary:focus-visible { outline:2px solid var(--style-glow); outline-offset:4px; border-radius:4px; }
 .admin-shell .admin-nav-items { display:grid; gap:8px; margin-top:12px; }
 
-/* Give the learner destination breathing room and a distinct action colour. */
+/* Give the learner destination breathing room and the chosen admin palette. */
 html[data-theme][data-admin-style] .admin-shell .admin-identity-card + nav { margin-top:20px; }
 html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[href='/'] {
- background:linear-gradient(180deg,#ffffff20,transparent 70%),#116b5c;
- color:#fff; border-color:#58b6a5;
- box-shadow:inset 0 1px 0 #ffffff40,0 2px 0 #07483e,0 4px 8px #0003;
+ background:linear-gradient(180deg,#ffffff20,transparent 70%),var(--style-accent);
+ color:#fff; border-color:var(--style-glow);
+ box-shadow:inset 0 1px 0 #ffffff40,0 2px 0 color-mix(in srgb,var(--style-accent) 65%,#000),0 4px 8px #0003;
 }
-html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[href='/']:hover { background:#0c584b; border-color:#8bd8c9; }
+html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[href='/']:hover { background:var(--accent-hover); border-color:color-mix(in srgb,var(--style-glow) 75%,white); }
 
 /* Branded header above the account details. */
 html[data-theme][data-admin-style] .admin-shell .admin-identity-card .side-brand {
@@ -185,7 +185,7 @@ html[data-theme][data-admin-style] .admin-shell .admin-identity-card .side-brand
 html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[href='/'] { position:relative; }
 html[data-theme][data-admin-style] .admin-shell .admin-side nav > a.side-link[href='/']::after {
  content:''; position:absolute; inset:-1px; padding:2px; border-radius:inherit; pointer-events:none;
- background:conic-gradient(from var(--hub-border-angle),#58b6a533 0deg 230deg,#7fffe0 290deg,#f3fff9 320deg,#58b6a533 360deg);
+ background:conic-gradient(from var(--hub-border-angle),color-mix(in srgb,var(--style-glow) 20%,transparent) 0deg 230deg,var(--style-glow) 290deg,color-mix(in srgb,var(--style-glow) 20%,white) 320deg,color-mix(in srgb,var(--style-glow) 20%,transparent) 360deg);
  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
  -webkit-mask-composite:xor;
  mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
